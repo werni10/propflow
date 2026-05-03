@@ -60,8 +60,11 @@ export default function Home() {
 
       <section className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center mb-12">
+          <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+            🚀 Live & Operational
+          </div>
           <h1 className="text-4xl font-bold mb-4">Find Cinema Props</h1>
-          <p className="text-xl text-gray-600">Rent the perfect props for your next film production</p>
+          <p className="text-xl text-gray-600">Morocco's premier prop rental marketplace for filmmakers & set decorators</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
