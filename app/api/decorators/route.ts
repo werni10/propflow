@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('decorators')
         .select('*, users:id(email, name, avatar_url, status)')
         .eq('id', id)
