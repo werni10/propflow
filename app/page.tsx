@@ -2,167 +2,161 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Item, Decorator } from '@/lib/types';
+import { Item } from '@/lib/types';
+
+const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
+const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
 
 export default function Home() {
-  const [items, setItems] = useState<(Item & { decorators?: Partial<Decorator> })[]>([]);
+  const [items, setItems]     = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    category: '',
-    location: '',
-    minPrice: '',
-    maxPrice: '',
-  });
+  const [filters, setFilters] = useState({ category: '', location: '', minPrice: '', maxPrice: '' });
 
-  const categories = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
-  const locations = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
-
-  useEffect(() => {
-    fetchItems();
-  }, [filters]);
+  useEffect(() => { fetchItems(); }, [filters]);
 
   async function fetchItems() {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.category) params.append('category', filters.category);
-      if (filters.location) params.append('location', filters.location);
-      if (filters.minPrice) params.append('minPrice', filters.minPrice);
-      if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-
-      const res = await fetch(`/api/items?${params}`);
+      const p = new URLSearchParams();
+      if (filters.category) p.append('category', filters.category);
+      if (filters.location) p.append('location', filters.location);
+      if (filters.minPrice) p.append('minPrice', filters.minPrice);
+      if (filters.maxPrice) p.append('maxPrice', filters.maxPrice);
+      const res = await fetch(`/api/items?${p}`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch items:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setItems([]); }
+    finally { setLoading(false); }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-orange-600">
-            PropFlow
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+
+      {/* NAV */}
+      <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-void)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>PropFlow</span>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Morocco</span>
+            </div>
           </Link>
-          <nav className="flex gap-4">
-            <Link href="/auth/login" className="text-gray-600 hover:text-orange-600">
-              Sign in
-            </Link>
-            <Link href="/auth/signup" className="bg-orange-600 text-white px-4 py-2 rounded-lg">
-              Get started
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-            🚀 Live & Operational
-          </div>
-          <h1 className="text-4xl font-bold mb-4">Find Cinema Props</h1>
-          <p className="text-xl text-gray-600">Morocco's premier prop rental marketplace for filmmakers & set decorators</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="">Category</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={filters.location}
-              onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="">Location</option>
-              {locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              placeholder="Min price (DHS)"
-              value={filters.minPrice}
-              onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-
-            <input
-              type="number"
-              placeholder="Max price (DHS)"
-              value={filters.maxPrice}
-              onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-
-            <button
-              onClick={() =>
-                setFilters({
-                  category: '',
-                  location: '',
-                  minPrice: '',
-                  maxPrice: '',
-                })
-              }
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400"
-            >
-              Reset
-            </button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Link href="/auth/login" style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-sub)', textDecoration: 'none' }}>Sign in</Link>
+            <Link href="/auth/signup" className="btn-gold" style={{ padding: '8px 20px', fontSize: 12, borderRadius: 2, display: 'inline-block', textDecoration: 'none' }}>Get Started</Link>
           </div>
         </div>
+      </nav>
 
+      {/* HERO */}
+      <section style={{ position: 'relative', borderBottom: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 80% at 50% 120%, rgba(212,168,50,0.07) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(to right, transparent, var(--border-gold), transparent)' }} />
+
+        {/* film strip accents */}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 32, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'hidden', opacity: 0.15 }}>
+          {Array.from({length: 20}).map((_, i) => (
+            <div key={i} style={{ flex: 1, borderBottom: '1px solid var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 14, height: '60%', border: '1px solid var(--gold)', borderRadius: 2 }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 32, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'hidden', opacity: 0.15 }}>
+          {Array.from({length: 20}).map((_, i) => (
+            <div key={i} style={{ flex: 1, borderBottom: '1px solid var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 14, height: '60%', border: '1px solid var(--gold)', borderRadius: 2 }} />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 64px', textAlign: 'center', position: 'relative' }}>
+          <div className="tag" style={{ display: 'inline-block', marginBottom: 24 }}>Cinema · Set Design · Morocco</div>
+          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(40px, 6vw, 76px)', fontWeight: 700, lineHeight: 1.1, color: 'var(--text)', marginBottom: 20 }}>
+            The Stage is Set.<br/>
+            <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Find Your Props.</em>
+          </h1>
+          <p style={{ fontFamily: 'Barlow, sans-serif', fontSize: 17, color: 'var(--text-sub)', maxWidth: 540, margin: '0 auto 40px', fontWeight: 300, lineHeight: 1.7 }}>
+            Morocco's first marketplace connecting professional set decorators with filmmakers. Every prop, every scene, every story.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/auth/signup?role=renter" className="btn-gold" style={{ padding: '14px 32px', fontSize: 13, borderRadius: 2, textDecoration: 'none', display: 'inline-block' }}>Find Props</Link>
+            <Link href="/auth/signup?role=decorator" className="btn-ghost" style={{ padding: '14px 32px', fontSize: 13, borderRadius: 2, textDecoration: 'none', display: 'inline-block' }}>List Your Props</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FILTERS */}
+      <section style={{ background: 'var(--bg-void)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', marginRight: 4 }}>Filter</span>
+          {[
+            <select key="cat" value={filters.category} onChange={e => setFilters(f => ({...f, category: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
+              <option value="">All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>,
+            <select key="loc" value={filters.location} onChange={e => setFilters(f => ({...f, location: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
+              <option value="">All Cities</option>
+              {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>,
+            <input key="min" type="number" placeholder="Min DHS" value={filters.minPrice} onChange={e => setFilters(f => ({...f, minPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />,
+            <input key="max" type="number" placeholder="Max DHS" value={filters.maxPrice} onChange={e => setFilters(f => ({...f, maxPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />,
+          ]}
+          {(filters.category || filters.location || filters.minPrice || filters.maxPrice) && (
+            <button onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '' })} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>✕ Clear</button>
+          )}
+        </div>
+      </section>
+
+      {/* GRID */}
+      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px' }}>
         {loading ? (
-          <div className="text-center py-12">Loading props...</div>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 13 }}>Loading scenes...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-12 text-gray-600">No props found matching your filters</div>
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, color: 'var(--text-sub)', marginBottom: 12 }}>No props found</div>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Try adjusting your filters</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/items/${item.id}`}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                <div className="aspect-square bg-gray-200 relative">
-                  {item.photos && item.photos.length > 0 ? (
-                    <img
-                      src={item.photos[0]}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
-                      No image
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            {items.map(item => (
+              <Link key={item.id} href={`/items/${item.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div className="card-dark" style={{ borderRadius: 2, overflow: 'hidden', cursor: 'pointer' }}>
+                  <div style={{ aspectRatio: '4/3', background: 'var(--bg-elevated)', position: 'relative', overflow: 'hidden' }}>
+                    {item.photos?.length > 0 ? (
+                      <img src={item.photos[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} onMouseOver={e => (e.currentTarget.style.transform='scale(1.04)')} onMouseOut={e => (e.currentTarget.style.transform='scale(1)')} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase' }}>No Image</span>
+                      </div>
+                    )}
+                    <div style={{ position: 'absolute', top: 10, left: 10 }}>
+                      <span className="tag" style={{ background: 'rgba(8,7,8,0.85)' }}>{item.category}</span>
                     </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{item.title}</h3>
-                  <p className="text-orange-600 font-bold mb-2">{item.price_per_day} DHS/day</p>
-                  <p className="text-sm text-gray-600 mb-3">{item.category}</p>
-                  <p className="text-xs text-gray-500">{item.location}</p>
+                  </div>
+                  <div style={{ padding: '16px 18px 18px' }}>
+                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 500, color: 'var(--text)', marginBottom: 8, lineHeight: 1.3 }}>{item.title}</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 20, fontWeight: 700, color: 'var(--gold)', letterSpacing: '-0.01em' }}>{item.price_per_day} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>DHS/day</span></span>
+                      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{item.location}</span>
+                    </div>
+                    <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.condition === 'Excellent' ? '#4CAF50' : item.condition === 'Good' ? 'var(--gold)' : '#FF9800' }} />
+                      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.condition}</span>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
         )}
       </section>
+
+      {/* FOOTER */}
+      <footer style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-void)', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, color: 'var(--gold)', marginBottom: 8 }}>PropFlow</div>
+        <p style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Cinema Prop Rental · Morocco · 2025</p>
+      </footer>
     </div>
   );
 }

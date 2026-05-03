@@ -3,124 +3,115 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser } from '@/lib/auth/client';
+import { getCurrentUser, signOut } from '@/lib/auth/client';
 import { Item, User } from '@/lib/types';
 
 export default function DecoratorDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [items, setItems] = useState<Item[]>([]);
+  const [user, setUser]     = useState<User | null>(null);
+  const [items, setItems]   = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  useEffect(() => { checkAuth(); }, []);
 
   async function checkAuth() {
-    const currentUser = await getCurrentUser();
-    if (!currentUser || currentUser.role !== 'decorator') {
-      router.push('/auth/login');
-      return;
-    }
-    setUser(currentUser);
-    fetchItems(currentUser.id);
+    const u = await getCurrentUser();
+    if (!u || u.role !== 'decorator') { router.push('/auth/login'); return; }
+    setUser(u);
+    const res = await fetch(`/api/items?decoratorId=${u.id}`);
+    const data = await res.json();
+    setItems(Array.isArray(data) ? data : []);
+    setLoading(false);
   }
 
-  async function fetchItems(decoratorId: string) {
-    try {
-      const res = await fetch(`/api/items?decoratorId=${decoratorId}`);
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch items:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  async function handleSignOut() { await signOut(); router.push('/'); }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) return null;
+  if (loading) return <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.15em', textTransform: 'uppercase', fontSize: 13 }}>Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-orange-600">
-            PropFlow
-          </Link>
-          <div className="flex gap-4">
-            <span className="text-sm text-gray-600">{user.name}</span>
-            <button
-              onClick={() => {
-                // Sign out logic
-                router.push('/');
-              }}
-              className="text-sm text-gray-600 hover:text-orange-600"
-            >
-              Sign out
-            </button>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+      {/* NAV */}
+      <nav style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-void)', height: 56, display: 'flex', alignItems: 'center', padding: '0 32px', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <Link href="/" style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 700, color: 'var(--gold)', textDecoration: 'none' }}>PropFlow</Link>
+          <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', borderLeft: '1px solid var(--border)', paddingLeft: 32 }}>Decorator Studio</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontFamily: 'Barlow', fontSize: 13, color: 'var(--text-sub)' }}>{user?.name}</span>
+          <button onClick={handleSignOut} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Sign Out</button>
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 32px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+          <div>
+            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 40, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>My Props</h1>
+            <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-sub)' }}>{items.length} listing{items.length !== 1 ? 's' : ''} in your catalogue</p>
           </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Props</h1>
-          <Link
-            href="/items/new"
-            className="bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-700"
-          >
-            Add new prop
+          <Link href="/items/new" className="btn-gold" style={{ padding: '12px 28px', borderRadius: 2, fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
+            + Add New Prop
           </Link>
         </div>
 
+        <div className="divider-gold" style={{ marginBottom: 40 }} />
+
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
+          {[
+            ['Active Listings', items.length, ''],
+            ['Status', user?.status === 'verified' ? 'Verified' : 'Pending', user?.status === 'verified' ? '✓' : '⏳'],
+            ['Subscription', 'Active', '✓'],
+          ].map(([label, value, badge]) => (
+            <div key={String(label)} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 2, padding: '24px 28px' }}>
+              <div style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>{label}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: 32, fontWeight: 700, color: 'var(--text)' }}>{value}</span>
+                {badge && <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--gold)', letterSpacing: '0.08em' }}>{badge}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Items */}
         {items.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-600 mb-4">No props listed yet</p>
-            <Link
-              href="/items/new"
-              className="text-orange-600 hover:underline font-semibold"
-            >
-              List your first prop
-            </Link>
+          <div style={{ textAlign: 'center', padding: '80px 0', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 2 }}>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, color: 'var(--text-sub)', marginBottom: 12 }}>No props listed yet.</div>
+            <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>Your catalogue is empty. Add your first prop to start earning.</p>
+            <Link href="/items/new" className="btn-gold" style={{ padding: '12px 28px', borderRadius: 2, fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>List First Prop</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item) => (
-              <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="aspect-square bg-gray-200">
-                  {item.photos && item.photos.length > 0 ? (
-                    <img
-                      src={item.photos[0]}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {items.map(item => (
+              <div key={item.id} className="card-dark" style={{ borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '4/3', background: 'var(--bg-elevated)', position: 'relative' }}>
+                  {item.photos?.length > 0 ? (
+                    <img src={item.photos[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
-                      No image
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     </div>
                   )}
+                  <div style={{ position: 'absolute', top: 10, left: 10 }}>
+                    <span className="tag" style={{ background: 'rgba(8,7,8,0.85)' }}>{item.category}</span>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                  <p className="text-orange-600 font-bold mb-4">{item.price_per_day} DHS/day</p>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/items/${item.id}`}
-                      className="flex-1 text-center bg-gray-100 text-gray-700 py-2 rounded hover:bg-gray-200"
-                    >
-                      View
-                    </Link>
-                    <button className="flex-1 text-center bg-orange-100 text-orange-700 py-2 rounded hover:bg-orange-200">
-                      Edit
-                    </button>
+                <div style={{ padding: '16px 18px' }}>
+                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 500, color: 'var(--text)', marginBottom: 8, lineHeight: 1.3 }}>{item.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                    <span style={{ fontFamily: 'Barlow Condensed', fontSize: 18, fontWeight: 700, color: 'var(--gold)' }}>{item.price_per_day} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>DHS/day</span></span>
+                    <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.location}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <Link href={`/items/${item.id}`} style={{ textAlign: 'center', padding: '8px', fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-sub)', border: '1px solid var(--border)', borderRadius: 2, textDecoration: 'none' }}>View</Link>
+                    <button style={{ padding: '8px', fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold)', border: '1px solid var(--border-gold)', borderRadius: 2, background: 'none', cursor: 'pointer' }}>Edit</button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
