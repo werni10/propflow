@@ -127,8 +127,8 @@ UPDATE decorators SET total_listings = (
 
 -- Step 5: Verification queue entries (for testing admin dashboard)
 INSERT INTO verification_queue (id, user_id, user_type, status) VALUES
-  ('vvvvvvvv-0001-0001-0001-vvvvvvvvvvvv', '33333333-3333-3333-3333-333333333333', 'renter', 'pending'),
-  ('vvvvvvvv-0002-0002-0002-vvvvvvvvvvvv', '44444444-4444-4444-4444-444444444444', 'renter', 'pending')
+  ('ee000000-0001-0001-0001-ee0000000001', '33333333-3333-3333-3333-333333333333', 'renter', 'pending'),
+  ('ee000000-0002-0002-0002-ee0000000002', '44444444-4444-4444-4444-444444444444', 'renter', 'pending')
 ON CONFLICT (id) DO NOTHING;
 
 -- Done! Check your data:
