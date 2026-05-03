@@ -47,6 +47,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Auto-create decorator profile if missing
+    if (body.decorator_id) {
+      await getSupabase()
+        .from('decorators')
+        .upsert([{ id: body.decorator_id, portfolio_verified: false, average_rating: 0, total_listings: 0, subscription_active: true }], { onConflict: 'id', ignoreDuplicates: true });
+    }
+
     const { data, error } = await getSupabase().from('items').insert([body]).select();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

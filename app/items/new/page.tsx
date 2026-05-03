@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCurrentUser } from '@/lib/auth/client';
+import { User } from '@/lib/types';
 
 const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
 const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
@@ -10,28 +12,53 @@ const CONDITIONS = ['Excellent', 'Good', 'Fair'] as const;
 
 export default function NewItem() {
   const router = useRouter();
+  const [user, setUser]     = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', category: 'Furniture', price_per_day: '', condition: 'Good', location: 'Casablanca', deposit_required: false, deposit_amount: '' });
+  const [error, setError]   = useState('');
+  const [form, setForm] = useState({
+    title: '', description: '', category: 'Furniture',
+    price_per_day: '', condition: 'Good', location: 'Casablanca',
+    deposit_required: false, deposit_amount: '',
+  });
+
+  useEffect(() => {
+    getCurrentUser().then(u => {
+      if (!u || u.role !== 'decorator') { router.push('/auth/login'); return; }
+      setUser(u);
+    });
+  }, []);
 
   function set(k: string, v: string | boolean) { setForm(f => ({...f, [k]: v})); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     setLoading(true);
+    setError('');
     try {
       const res = await fetch('/api/items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer token' },
-        body: JSON.stringify({ ...form, price_per_day: parseFloat(form.price_per_day), deposit_amount: form.deposit_required ? parseFloat(form.deposit_amount) : null, photos: [] }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.id}` },
+        body: JSON.stringify({
+          decorator_id: user.id,
+          ...form,
+          price_per_day: parseFloat(form.price_per_day),
+          deposit_amount: form.deposit_required ? parseFloat(form.deposit_amount) : null,
+          photos: [],
+          availability_dates: {},
+        }),
       });
+      const data = await res.json();
       if (res.ok) router.push('/decorators/dashboard');
-      else alert('Failed to create listing');
-    } catch (err) { alert(String(err)); }
+      else setError(data.error || 'Failed to create listing');
+    } catch (err) { setError(String(err)); }
     finally { setLoading(false); }
   }
 
   const inputStyle = { width: '100%', padding: '12px 16px', borderRadius: 2, fontSize: 14, fontFamily: 'Barlow, sans-serif' };
   const labelStyle = { display: 'block' as const, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: 8 };
+
+  if (!user) return <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.15em', textTransform: 'uppercase', fontSize: 13 }}>Loading...</div>;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -45,7 +72,7 @@ export default function NewItem() {
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
         <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 40, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>List a New Prop</h1>
-        <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-sub)', marginBottom: 40 }}>Add your prop to the PropFlow catalogue.</p>
+        <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-sub)', marginBottom: 40 }}>Listing as <strong style={{ color: 'var(--gold)' }}>{user.name}</strong></p>
 
         <div className="divider-gold" style={{ marginBottom: 40 }} />
 
@@ -103,6 +130,12 @@ export default function NewItem() {
               </div>
             )}
           </div>
+
+          {error && (
+            <div style={{ background: 'rgba(155,58,58,0.15)', border: '1px solid rgba(155,58,58,0.4)', color: '#EB5757', padding: '12px 16px', borderRadius: 2, fontSize: 13, fontFamily: 'Barlow' }}>
+              {error}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
             <button type="submit" disabled={loading} className="btn-gold" style={{ flex: 1, padding: '14px', borderRadius: 2, fontSize: 13, border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
