@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import { User } from '@/lib/types';
 
 export async function signUp(
@@ -10,7 +10,7 @@ export async function signUp(
   role: 'decorator' | 'renter'
 ): Promise<{ user: User | null; error: string | null }> {
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await getSupabase().auth.signUp({
       email,
       password,
       options: {
@@ -22,7 +22,7 @@ export async function signUp(
 
     // Create user profile
     if (data.user) {
-      const { error: profileError } = await supabase
+      const { error: profileError } = await getSupabase()
         .from('users')
         .insert([
           {
@@ -61,7 +61,7 @@ export async function signIn(
   password: string
 ): Promise<{ user: User | null; error: string | null }> {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await getSupabase().auth.signInWithPassword({
       email,
       password,
     });
@@ -69,7 +69,7 @@ export async function signIn(
     if (error) return { user: null, error: error.message };
 
     if (data.user) {
-      const { data: userData, error: userError } = await supabase
+      const { data: userData, error: userError } = await getSupabase()
         .from('users')
         .select('*')
         .eq('id', data.user.id)
@@ -88,7 +88,7 @@ export async function signIn(
 
 export async function signInWithGoogle() {
   try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await getSupabase().auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -104,15 +104,15 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  await getSupabase().auth.signOut();
 }
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await getSupabase().auth.getUser();
     if (error || !data.user) return null;
 
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await getSupabase()
       .from('users')
       .select('*')
       .eq('id', data.user.id)
