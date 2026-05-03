@@ -38,15 +38,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await getSupabase()
       .from('payouts')
-      .insert([
-        {
-          decorator_id,
-          amount,
-          period_start,
-          period_end,
-          status: 'pending',
-        },
-      ])
+      .insert([{ decorator_id, amount, period_start, period_end, status: 'pending' }])
       .select();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });

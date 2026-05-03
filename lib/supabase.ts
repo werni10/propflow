@@ -1,7 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let supabase: ReturnType<typeof createClient> | null = null;
-let supabaseAdmin: ReturnType<typeof createClient> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let supabase: SupabaseClient<any> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let supabaseAdmin: SupabaseClient<any> | null = null;
 
 function initSupabase() {
   if (supabase) return supabase;
@@ -31,10 +34,12 @@ function initSupabaseAdmin() {
   return supabaseAdmin;
 }
 
-export function getSupabase() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getSupabase(): SupabaseClient<any> {
   return initSupabase();
 }
 
-export function getSupabaseAdmin() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getSupabaseAdmin(): SupabaseClient<any> {
   return initSupabaseAdmin();
 }
