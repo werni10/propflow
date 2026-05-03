@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'pending';
     const month = searchParams.get('month');
 
-    let query = supabase
+    let query = getSupabase()
       .from('payouts')
       .select('*, decorators:decorator_id(users:id(name, email))')
       .eq('status', status);

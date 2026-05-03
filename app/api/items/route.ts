@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     }
 
-    let query = supabase.from('items').select('*, decorators:decorator_id(*)');
+    let query = getSupabase().from('items').select('*, decorators:decorator_id(*)');
 
     if (category) query = query.eq('category', category);
     if (location) query = query.ilike('location', `%${location}%`);
