@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth/client';
 import { User, Item } from '@/lib/types';
 
-export default function NewBooking() {
+function NewBookingForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const itemId = searchParams.get('itemId');
@@ -52,11 +52,9 @@ export default function NewBooking() {
     setProcessing(true);
 
     try {
-      // Calculate total price
       const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
       const totalPrice = days * item.price_per_day * parseInt(quantity);
 
-      // Create booking
       const bookingRes = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +72,6 @@ export default function NewBooking() {
       if (!bookingRes.ok) throw new Error('Failed to create booking');
       const booking = await bookingRes.json();
 
-      // Initiate payment
       const paymentRes = await fetch('/api/payments/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,7 +86,6 @@ export default function NewBooking() {
       if (!paymentRes.ok) throw new Error('Failed to process payment');
       const paymentData = await paymentRes.json();
 
-      // Redirect to YouCanPay
       window.location.href = paymentData.checkout_url;
     } catch (err) {
       alert(String(err));
@@ -108,9 +104,7 @@ export default function NewBooking() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-orange-600">
-            PropFlow
-          </Link>
+          <Link href="/" className="text-2xl font-bold text-orange-600">PropFlow</Link>
         </div>
       </header>
 
@@ -194,5 +188,13 @@ export default function NewBooking() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function NewBooking() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <NewBookingForm />
+    </Suspense>
   );
 }
