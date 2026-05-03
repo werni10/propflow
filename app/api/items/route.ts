@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const id = searchParams.get('id');
+    const decoratorId = searchParams.get('decoratorId');
 
     if (id) {
       const { data, error } = await getSupabase()
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
 
     let query = getSupabase().from('items').select('*, decorators:decorator_id(*)');
 
+    if (decoratorId) query = query.eq('decorator_id', decoratorId);
     if (category) query = query.eq('category', category);
     if (location) query = query.ilike('location', `%${location}%`);
     if (minPrice) query = query.gte('price_per_day', parseFloat(minPrice));
