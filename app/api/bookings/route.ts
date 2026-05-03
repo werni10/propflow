@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('bookings')
         .select('*')
         .eq('id', id)
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (userId) {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('bookings')
         .select('*, items:item_id(*), decorators:decorator_id(*)')
         .or(`renter_id.eq.${userId},decorator_id.eq.${userId}`)
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       total_price,
     } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('bookings')
       .insert([
         {
@@ -76,7 +76,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { id, status } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('bookings')
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)

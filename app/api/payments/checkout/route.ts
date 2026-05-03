@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { booking_id, amount, user_id, user_email } = body;
 
     // Create payment record
-    const { data: paymentData, error: paymentError } = await supabase
+    const { data: paymentData, error: paymentError } = await getSupabase()
       .from('payments')
       .insert([
         {

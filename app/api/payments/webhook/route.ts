@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature (TODO: implement with YouCanPay)
 
     // Update payment status
-    const { data: paymentData, error: paymentError } = await supabase
+    const { data: paymentData, error: paymentError } = await getSupabase()
       .from('payments')
       .update({
         status: status === 'success' ? 'completed' : 'failed',
@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
 
     // Update booking status if payment successful
     if (status === 'success') {
-      const { data: booking } = await supabase
+      const { data: booking } = await getSupabase()
         .from('bookings')
         .select('id')
         .eq('payment_id', payment_id)
         .single();
 
       if (booking) {
-        await supabase
+        await getSupabase()
           .from('bookings')
           .update({ status: 'confirmed' })
           .eq('id', booking.id);

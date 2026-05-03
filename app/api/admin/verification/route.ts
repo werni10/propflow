@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('verification_queue')
       .select('*')
       .eq('status', 'pending')
@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest) {
     const { verification_id, user_id, approved, reviewed_by } = body;
 
     // Update verification queue
-    const { error: updateError } = await supabase
+    const { error: updateError } = await getSupabase()
       .from('verification_queue')
       .update({
         status: approved ? 'approved' : 'rejected',
@@ -37,7 +37,7 @@ export async function PUT(request: NextRequest) {
 
     // Update user status
     if (approved) {
-      const { error: userError } = await supabase
+      const { error: userError } = await getSupabase()
         .from('users')
         .update({ status: 'verified' })
         .eq('id', user_id);

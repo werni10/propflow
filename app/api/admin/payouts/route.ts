@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { decorator_id, amount, period_start, period_end } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('payouts')
       .insert([
         {

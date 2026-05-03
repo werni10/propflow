@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('decorators')
       .select('*, users:id(email, name, avatar_url)')
       .order('average_rating', { ascending: false });
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id, bio } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('decorators')
       .insert([{ id, bio, portfolio_verified: false }])
       .select();
