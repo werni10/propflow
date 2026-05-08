@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await getSupabase()
       .from('verification_queue')
-      .select('*')
+      .select('*, users:user_id(name, email, role, avatar_url)')
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
 

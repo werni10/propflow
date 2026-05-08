@@ -23,9 +23,10 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 function statusBelongsToTab(status: BookingStatus, tab: Tab): boolean {
-  if (tab === 'payment_pending') return status === 'payment_pending';
-  if (tab === 'confirmed')       return status === 'confirmed';
-  return status === 'cancelled' || status === 'completed';
+  const s = status as string;
+  if (tab === 'payment_pending') return s === 'payment_pending' || s === 'pending';
+  if (tab === 'confirmed')       return s === 'confirmed';
+  return s === 'cancelled' || s === 'completed';
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -181,7 +182,8 @@ export default function DecoratorBookings() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {visibleBookings.map(booking => {
-              const isPending = booking.status === 'payment_pending';
+              const statusStr = booking.status as string;
+              const isPending = statusStr === 'payment_pending' || statusStr === 'pending';
               const isActing  = acting === booking.id;
               const propTitle = booking.items?.title ?? 'Unknown Prop';
               const propPhoto = booking.items?.photos?.[0];
