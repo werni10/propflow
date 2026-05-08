@@ -31,26 +31,25 @@ export async function updateSession(request: NextRequest) {
   // Route-specific auth checks
   const pathname = request.nextUrl.pathname;
 
-  if (pathname.startsWith('/admin')) {
-    if (!user || user.email !== 'admin@propflow.ma') {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-  }
-
-  if (pathname.startsWith('/decorators/dashboard')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-    // Check user role in DB (fetch from users table)
-    const { data: userProfile } = await supabase
+  // Fetch role for protected routes
+  let userRole: string | null = null;
+  if (user && (pathname.startsWith('/admin') || pathname.startsWith('/decorators/dashboard'))) {
+    const { data: profile } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
+    userRole = profile?.role ?? null;
+  }
 
-    if (!userProfile || userProfile.role !== 'decorator') {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
+  if (pathname.startsWith('/admin')) {
+    if (!user) return NextResponse.redirect(new URL('/auth/login', request.url));
+    if (userRole !== 'admin') return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  if (pathname.startsWith('/decorators/dashboard')) {
+    if (!user) return NextResponse.redirect(new URL('/auth/login', request.url));
+    if (userRole !== 'decorator') return NextResponse.redirect(new URL('/', request.url));
   }
 
   if (pathname.startsWith('/bookings') || pathname.startsWith('/items/new')) {

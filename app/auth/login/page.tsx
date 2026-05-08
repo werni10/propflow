@@ -22,7 +22,9 @@ function LoginForm() {
       const { user, error: err } = await signIn(email, password);
       if (err) { setError(err); setLoading(false); return; }
       if (!user) { setError('Login failed — check your email and password.'); setLoading(false); return; }
-      router.push(user.role === 'decorator' ? '/decorators/dashboard' : '/');
+      if (user.role === 'admin') router.push('/admin/dashboard');
+      else if (user.role === 'decorator') router.push('/decorators/dashboard');
+      else router.push('/');
     } catch (err) {
       setError(String(err));
       setLoading(false);
