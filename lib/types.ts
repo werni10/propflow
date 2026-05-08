@@ -44,7 +44,7 @@ export type Booking = {
   end_date: string;
   quantity: number;
   total_price: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'payment_pending' | 'confirmed' | 'active' | 'cancelled' | 'completed';
   payment_id?: string;
   created_at: string;
   updated_at: string;
