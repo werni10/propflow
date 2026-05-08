@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
+import { validateAuth } from '@/lib/auth/validate';
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await validateAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { booking_id, amount, user_id, user_email } = body;
 

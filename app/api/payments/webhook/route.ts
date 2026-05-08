@@ -26,17 +26,17 @@ export async function POST(request: NextRequest) {
 
     // Update booking status if payment successful
     if (status === 'success') {
-      const { data: booking } = await getSupabase()
-        .from('bookings')
-        .select('id')
-        .eq('payment_id', payment_id)
+      const { data: payment } = await getSupabase()
+        .from('payments')
+        .select('booking_id')
+        .eq('id', payment_id)
         .single();
 
-      if (booking) {
+      if (payment && payment.booking_id) {
         await getSupabase()
           .from('bookings')
-          .update({ status: 'confirmed' })
-          .eq('id', booking.id);
+          .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+          .eq('id', payment.booking_id);
       }
     }
 

@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { validateAuth } from '@/lib/auth/validate';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -31,6 +32,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await validateAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, bio } = body;
 

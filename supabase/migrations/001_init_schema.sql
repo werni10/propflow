@@ -51,7 +51,7 @@ CREATE TABLE bookings (
   end_date DATE NOT NULL,
   quantity INTEGER DEFAULT 1,
   total_price DECIMAL(10,2) NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+  status VARCHAR(50) DEFAULT 'payment_pending' CHECK (status IN ('payment_pending', 'confirmed', 'cancelled', 'completed')),
   payment_id UUID,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
