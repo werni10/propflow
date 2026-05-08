@@ -18,10 +18,15 @@ function LoginForm() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setError(''); setLoading(true);
-    const { user, error: err } = await signIn(email, password);
-    if (err) setError(err);
-    else if (user) router.push(user.role === 'decorator' ? '/decorators/dashboard' : '/');
-    setLoading(false);
+    try {
+      const { user, error: err } = await signIn(email, password);
+      if (err) { setError(err); setLoading(false); return; }
+      if (!user) { setError('Login failed — check your email and password.'); setLoading(false); return; }
+      router.push(user.role === 'decorator' ? '/decorators/dashboard' : '/');
+    } catch (err) {
+      setError(String(err));
+      setLoading(false);
+    }
   }
 
   async function handleGoogle() {
