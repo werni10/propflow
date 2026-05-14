@@ -11,14 +11,11 @@ const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Othe
 const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
 const ERAS       = ['1920s', '1940s', '1960s', '1970s', '1980s', 'Modern', 'Contemporary'];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Furniture: '🪑', Lighting: '💡', Decor: '🎭', Props: '🎬', Textiles: '🧵', Other: '✦'
-};
-
 export default function Home() {
   const [items, setItems]     = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapView, setMapView] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [filters, setFilters] = useState({
     category: '', location: '', minPrice: '', maxPrice: '',
     search: '', era: '', instantBook: false,
@@ -29,17 +26,22 @@ export default function Home() {
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { fetchItems(); }, [filters]);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   async function fetchItems() {
     setLoading(true);
     try {
       const p = new URLSearchParams();
-      if (filters.category)   p.append('category', filters.category);
-      if (filters.location)   p.append('location', filters.location);
-      if (filters.minPrice)   p.append('minPrice', filters.minPrice);
-      if (filters.maxPrice)   p.append('maxPrice', filters.maxPrice);
-      if (filters.search)     p.append('search', filters.search);
-      if (filters.era)        p.append('era', filters.era);
+      if (filters.category)    p.append('category', filters.category);
+      if (filters.location)    p.append('location', filters.location);
+      if (filters.minPrice)    p.append('minPrice', filters.minPrice);
+      if (filters.maxPrice)    p.append('maxPrice', filters.maxPrice);
+      if (filters.search)      p.append('search', filters.search);
+      if (filters.era)         p.append('era', filters.era);
       if (filters.instantBook) p.append('instantBook', 'true');
       const res = await fetch(`/api/items?${p}`);
       const data = await res.json();
@@ -59,409 +61,884 @@ export default function Home() {
     setFilters(f => ({ ...f, category: f.category === cat ? '' : cat }));
   }
 
+  function setLocation(loc: string) {
+    setFilters(f => ({ ...f, location: f.location === loc ? '' : loc }));
+  }
+
   const hasActiveFilters = filters.category || filters.location || filters.minPrice || filters.maxPrice || filters.search || filters.era || filters.instantBook;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
 
-      {/* ── NAV ────────────────────────────────────── */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid var(--border)', background: 'rgba(6,5,6,0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 26, fontWeight: 400, fontStyle: 'italic', color: 'var(--gold)', letterSpacing: '-0.01em' }}>PropFlow</span>
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 9, letterSpacing: '0.28em', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Morocco</span>
+      {/* ── NAV ────────────────────────────────────────────── */}
+      <nav style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 40px',
+        borderBottom: scrolled ? '1px solid var(--rule)' : '1px solid transparent',
+        background: scrolled ? 'rgba(13,12,16,0.97)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(12px)' : 'none',
+        transition: 'all 0.4s cubic-bezier(0.25, 0, 0, 1)',
+      }}>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <span style={{
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: 22,
+            fontWeight: 300,
+            fontStyle: 'italic',
+            color: 'var(--gold)',
+            letterSpacing: '0.01em',
+          }}>PropFlow</span>
+        </Link>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <Link href="/auth/login" style={{
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: 'var(--warm)',
+            textDecoration: 'none',
+            transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--warm)')}
+          >
+            Sign In
           </Link>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link href="/auth/login" style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', textDecoration: 'none', padding: '8px 16px', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-            >
-              Sign In
-            </Link>
-            <Link href="/auth/signup" className="btn-gold" style={{ padding: '9px 22px', fontSize: 11, borderRadius: 1, display: 'inline-block', textDecoration: 'none' }}>
-              Get Started
-            </Link>
-          </div>
+          <Link href="/auth/signup" style={{
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: 'var(--cream)',
+            textDecoration: 'none',
+            transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream)')}
+          >
+            List a Prop →
+          </Link>
         </div>
       </nav>
 
-      {/* ── HERO ───────────────────────────────────── */}
-      <section style={{ position: 'relative', minHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
+      {/* ── HERO ─────────────────────────────────────────── */}
+      <section style={{
+        position: 'relative',
+        minHeight: '100vh',
+        display: 'grid',
+        gridTemplateColumns: '60fr 40fr',
+        borderBottom: '1px solid var(--rule)',
+        overflow: 'hidden',
+      }}>
 
-        {/* Background glow */}
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 110%, rgba(201,162,39,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(to right, transparent 0%, var(--border-gold) 30%, var(--gold-dim) 50%, var(--border-gold) 70%, transparent 100%)' }} />
+        {/* Left column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '120px 80px 80px 80px',
+          borderRight: '1px solid var(--rule)',
+          position: 'relative',
+        }}>
 
-        {/* Film strips */}
-        {[0, 1].map(side => (
-          <div key={side} style={{ position: 'absolute', [side === 0 ? 'left' : 'right']: 0, top: 0, bottom: 0, width: 28, color: 'var(--gold)', opacity: 0.08 }} className="film-strip">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="film-strip-cell">
-                <div className="film-strip-hole" />
-              </div>
-            ))}
-          </div>
-        ))}
-
-        {/* Content */}
-        <div style={{ textAlign: 'center', maxWidth: 900, padding: '0 48px', position: 'relative' }}>
-
-          <div className={`eyebrow animate-fade-up`} style={{ marginBottom: 32 }}>
-            Cinema · Set Design · Morocco
-          </div>
-
-          <h1 className="animate-fade-up delay-1" style={{
-            fontFamily: 'Cormorant Garamond, Playfair Display, serif',
-            fontSize: 'clamp(52px, 8vw, 108px)',
+          {/* Eyebrow */}
+          <div className="animate-fade-up" style={{
+            fontFamily: 'DM Mono, monospace',
+            fontSize: 10,
             fontWeight: 300,
-            lineHeight: 1.0,
-            color: 'var(--text)',
-            letterSpacing: '-0.02em',
-            marginBottom: 8,
+            letterSpacing: '0.22em',
+            color: 'var(--cool)',
+            textTransform: 'uppercase',
+            marginBottom: 40,
           }}>
-            Every scene
+            PROP.MA&nbsp;&nbsp;/&nbsp;&nbsp;MOROCCO&nbsp;&nbsp;/&nbsp;&nbsp;EST. 2025
+          </div>
+
+          {/* Headline */}
+          <h1 className="animate-fade-up delay-1" style={{
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: 'clamp(64px, 8vw, 120px)',
+            fontWeight: 300,
+            fontStyle: 'normal',
+            lineHeight: 0.95,
+            color: 'var(--cream)',
+            letterSpacing: '-0.02em',
+            marginBottom: 0,
+          }}>
+            Every prop
           </h1>
           <h1 className="animate-fade-up delay-2" style={{
-            fontFamily: 'Cormorant Garamond, Playfair Display, serif',
-            fontSize: 'clamp(52px, 8vw, 108px)',
+            fontFamily: 'Cormorant Garamond, serif',
+            fontSize: 'clamp(64px, 8vw, 120px)',
             fontWeight: 300,
             fontStyle: 'italic',
-            lineHeight: 1.0,
+            lineHeight: 0.95,
             color: 'var(--gold)',
             letterSpacing: '-0.02em',
-            marginBottom: 40,
+            marginBottom: 48,
           }}>
             tells a story.
           </h1>
 
+          {/* Body copy */}
           <p className="animate-fade-up delay-3" style={{
-            fontFamily: 'Barlow',
-            fontSize: 16,
-            color: 'var(--text-sub)',
-            maxWidth: 480,
-            margin: '0 auto 48px',
+            fontFamily: 'Barlow, sans-serif',
             fontWeight: 300,
+            fontSize: 15,
+            color: 'var(--warm)',
+            maxWidth: 360,
             lineHeight: 1.8,
-            letterSpacing: '0.01em',
+            marginBottom: 56,
           }}>
-            Morocco's first marketplace connecting professional set decorators with filmmakers who demand excellence.
+            Morocco's first marketplace for cinema props. From Casablanca medinas to Marrakech riads — find the exact piece your scene demands.
           </p>
 
-          <div className="animate-fade-up delay-4" style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/auth/signup?role=renter" className="btn-gold" style={{ padding: '15px 40px', fontSize: 12, borderRadius: 1, textDecoration: 'none', display: 'inline-block', letterSpacing: '0.12em' }}>
-              Find Props
+          {/* CTAs */}
+          <div className="animate-fade-up delay-4" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            <Link href="#catalogue" style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--cream)',
+              textDecoration: 'none',
+              transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream)')}
+            >
+              Browse Props →
             </Link>
-            <Link href="/auth/signup?role=decorator" className="btn-ghost" style={{ padding: '15px 40px', fontSize: 12, borderRadius: 1, textDecoration: 'none', display: 'inline-block', letterSpacing: '0.12em' }}>
+            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 12, color: 'var(--cool)', margin: '0 20px' }}>·</span>
+            <Link href="/auth/signup?role=decorator" style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'var(--warm)',
+              textDecoration: 'none',
+              transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--warm)')}
+            >
               List Your Props
             </Link>
           </div>
-
-          {/* Scroll indicator */}
-          <div style={{ position: 'absolute', bottom: -80, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, opacity: 0.3 }}>
-            <div style={{ width: 1, height: 48, background: 'linear-gradient(to bottom, var(--gold), transparent)' }} />
-          </div>
         </div>
-      </section>
 
-      {/* ── STATS ──────────────────────────────────── */}
-      <section style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-void)' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        {/* Right column — stats */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '120px 56px 80px 56px',
+          position: 'relative',
+        }}>
           {[
-            { num: items.length || '200+', label: 'Props Available', sub: 'Across Morocco' },
-            { num: '5', label: 'Major Cities', sub: 'Casablanca to Fes' },
-            { num: '∞', label: 'Creative Possibilities', sub: 'Every production' },
+            { num: items.length > 0 ? `${items.length}+` : '200+', label: 'PROPS AVAILABLE' },
+            { num: '50+',  label: 'DECORATORS' },
+            { num: '5',    label: 'MOROCCAN CITIES' },
           ].map((stat, i) => (
-            <div key={i} style={{
-              padding: '48px 40px',
-              borderRight: i < 2 ? '1px solid var(--border)' : 'none',
-              textAlign: 'center',
-            }}>
-              <div className="stat-number">{stat.num}</div>
-              <div style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-sub)', marginTop: 12 }}>{stat.label}</div>
-              <div style={{ fontFamily: 'Barlow', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{stat.sub}</div>
+            <div key={i}>
+              {i > 0 && <div className="rule" style={{ margin: '0' }} />}
+              <div style={{ padding: '40px 0' }}>
+                <div className={`animate-fade-up delay-${i + 1}`} style={{
+                  fontFamily: 'Cormorant Garamond, serif',
+                  fontSize: 'clamp(40px, 5vw, 72px)',
+                  fontWeight: 300,
+                  color: 'var(--cream)',
+                  lineHeight: 1,
+                  letterSpacing: '-0.02em',
+                  marginBottom: 12,
+                }}>
+                  {stat.num}
+                </div>
+                <div style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: 10,
+                  fontWeight: 300,
+                  letterSpacing: '0.2em',
+                  color: 'var(--cool)',
+                  textTransform: 'uppercase',
+                }}>
+                  {stat.label}
+                </div>
+              </div>
             </div>
           ))}
-        </div>
-      </section>
 
-      {/* ── CATEGORY TILES ─────────────────────────── */}
-      <section style={{ borderBottom: '1px solid var(--border)', padding: '64px 0' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ marginBottom: 40, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <div>
-              <div className="eyebrow" style={{ marginBottom: 12 }}>Browse by Category</div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 300, fontStyle: 'italic', color: 'var(--text)' }}>
-                What does your scene need?
-              </h2>
+          {/* Film strip decoration */}
+          <div style={{ marginTop: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', width: 28, color: 'var(--rule)', opacity: 0.6 }} className="film-strip">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="film-strip-cell" style={{ height: 28 }}>
+                  <div className="film-strip-hole" />
+                </div>
+              ))}
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 2 }}>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                style={{
-                  background: filters.category === cat ? 'rgba(201,162,39,0.08)' : 'var(--bg-surface)',
-                  border: `1px solid ${filters.category === cat ? 'var(--border-gold)' : 'var(--border)'}`,
-                  padding: '28px 16px',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-                onMouseEnter={e => { if (filters.category !== cat) { e.currentTarget.style.borderColor = 'var(--border-gold)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}}
-                onMouseLeave={e => { if (filters.category !== cat) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-surface)'; }}}
-              >
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{CATEGORY_ICONS[cat]}</span>
-                <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: filters.category === cat ? 'var(--gold)' : 'var(--text-muted)' }}>{cat}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* ── FILTERS BAR ────────────────────────────── */}
-      <div style={{ background: 'rgba(6,5,6,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 64, zIndex: 90 }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '14px 32px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* ── SEARCH LINE ──────────────────────────────────── */}
+      <div id="catalogue" style={{
+        borderBottom: '1px solid var(--rule)',
+        background: 'var(--void)',
+        position: 'sticky',
+        top: 56,
+        zIndex: 90,
+      }}>
+        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 80px' }}>
 
-          {/* Search */}
-          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          {/* Search input */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cool)" strokeWidth="1.5" style={{ position: 'absolute', left: 0, pointerEvents: 'none', flexShrink: 0 }}>
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input
               ref={searchRef}
               type="text"
-              placeholder="Search props..."
+              placeholder="Search by title, style, era..."
               defaultValue={filters.search}
               onChange={e => handleSearchChange(e.target.value)}
-              className="input-dark"
-              style={{ width: '100%', padding: '8px 12px 8px 34px', borderRadius: 1, fontSize: 13 }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--rule-warm)',
+                outline: 'none',
+                width: '100%',
+                padding: '20px 0 20px 28px',
+                fontFamily: 'Barlow, sans-serif',
+                fontWeight: 300,
+                fontSize: 15,
+                color: 'var(--cream)',
+                transition: 'border-color 0.25s cubic-bezier(0.25,0,0,1)',
+              }}
+              onFocus={e => (e.target.style.borderBottomColor = 'var(--gold)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'var(--rule-warm)')}
             />
           </div>
 
-          <select value={filters.location} onChange={e => setFilters(f => ({...f, location: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 1, fontSize: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed', letterSpacing: '0.06em' }}>
-            <option value="">All Cities</option>
-            {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
+          {/* Filter pills */}
+          <div style={{
+            display: 'flex',
+            gap: 0,
+            alignItems: 'center',
+            overflowX: 'auto',
+            padding: '14px 0',
+            scrollbarWidth: 'none',
+          }}>
+            {/* Location pills */}
+            {['All', ...LOCATIONS].map(loc => {
+              const active = loc === 'All' ? !filters.location : filters.location === loc;
+              return (
+                <button
+                  key={loc}
+                  onClick={() => loc === 'All' ? setFilters(f => ({...f, location: ''})) : setLocation(loc)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: active ? '2px solid var(--gold)' : '2px solid transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: active ? 'var(--gold)' : 'var(--cool)',
+                    padding: '4px 16px 6px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
+                    marginRight: 4,
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--warm)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--cool)'; }}
+                >
+                  {loc}
+                </button>
+              );
+            })}
 
-          <select value={filters.era} onChange={e => setFilters(f => ({...f, era: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 1, fontSize: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed', letterSpacing: '0.06em' }}>
-            <option value="">Any Era</option>
-            {ERAS.map(era => <option key={era} value={era}>{era}</option>)}
-          </select>
+            {/* Separator */}
+            <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
 
-          <input type="number" placeholder="Min DHS" value={filters.minPrice} onChange={e => setFilters(f => ({...f, minPrice: e.target.value}))} className="input-dark" style={{ width: 100, padding: '8px 12px', borderRadius: 1, fontSize: 12 }} />
-          <input type="number" placeholder="Max DHS" value={filters.maxPrice} onChange={e => setFilters(f => ({...f, maxPrice: e.target.value}))} className="input-dark" style={{ width: 100, padding: '8px 12px', borderRadius: 1, fontSize: 12 }} />
+            {/* Category pills */}
+            {CATEGORIES.map(cat => {
+              const active = filters.category === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: active ? '2px solid var(--gold)' : '2px solid transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: active ? 'var(--gold)' : 'var(--cool)',
+                    padding: '4px 16px 6px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
+                    marginRight: 4,
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--warm)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--cool)'; }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
 
-          {[
-            { key: 'instantBook', label: '⚡ Instant', active: filters.instantBook, toggle: () => setFilters(f => ({...f, instantBook: !f.instantBook})) },
-            { key: 'mapView', label: '◎ Map', active: mapView, toggle: () => setMapView(v => !v) },
-          ].map(btn => (
-            <button key={btn.key} onClick={btn.toggle} style={{ padding: '8px 14px', borderRadius: 1, fontSize: 11, fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: btn.active ? 'rgba(201,162,39,0.08)' : 'transparent', border: `1px solid ${btn.active ? 'var(--gold)' : 'var(--border)'}`, color: btn.active ? 'var(--gold)' : 'var(--text-muted)', transition: 'all 0.2s' }}>
-              {btn.label}
-            </button>
-          ))}
+            {/* Separator */}
+            <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
 
-          {hasActiveFilters && (
-            <button onClick={() => { setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false }); if (searchRef.current) searchRef.current.value = ''; }} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px 6px', transition: 'color 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            {/* Special toggles */}
+            <button
+              onClick={() => setFilters(f => ({...f, instantBook: !f.instantBook}))}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: filters.instantBook ? '2px solid var(--gold)' : '2px solid transparent',
+                cursor: 'pointer',
+                fontFamily: 'Barlow Condensed, sans-serif',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: filters.instantBook ? 'var(--gold)' : 'var(--cool)',
+                padding: '4px 16px 6px',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
+                marginRight: 4,
+              }}
             >
-              ✕ Clear
+              ⚡ Instant Book
             </button>
-          )}
+
+            <button
+              onClick={() => setMapView(v => !v)}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: mapView ? '2px solid var(--gold)' : '2px solid transparent',
+                cursor: 'pointer',
+                fontFamily: 'Barlow Condensed, sans-serif',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: mapView ? 'var(--gold)' : 'var(--cool)',
+                padding: '4px 16px 6px',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
+              }}
+            >
+              ◎ Map
+            </button>
+
+            {hasActiveFilters && (
+              <>
+                <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
+                <button
+                  onClick={() => {
+                    setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false });
+                    if (searchRef.current) searchRef.current.value = '';
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'DM Mono, monospace',
+                    fontSize: 10,
+                    fontWeight: 300,
+                    letterSpacing: '0.1em',
+                    color: 'var(--cool)',
+                    padding: '4px 8px 6px',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--warm)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--cool)')}
+                >
+                  ✕ clear
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── RESULTS HEADER ─────────────────────────── */}
-      <section style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 32px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <div>
+      {/* ── RESULTS ──────────────────────────────────────── */}
+      <section style={{ maxWidth: 1440, margin: '0 auto', padding: '56px 80px 120px' }}>
+
+        {/* Results header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          marginBottom: 40,
+          paddingBottom: 32,
+          borderBottom: '1px solid var(--rule)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
             {!loading && (
               <>
-                <span style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 32, fontWeight: 300, fontStyle: 'italic', color: 'var(--text)' }}>
+                <span style={{
+                  fontFamily: 'Cormorant Garamond, serif',
+                  fontSize: 48,
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'var(--cream)',
+                  lineHeight: 1,
+                }}>
                   {items.length}
                 </span>
-                <span style={{ fontFamily: 'Barlow Condensed', fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', marginLeft: 12 }}>
-                  {items.length === 1 ? 'prop found' : 'props found'}
+                <span style={{
+                  fontFamily: 'DM Mono, monospace',
+                  fontSize: 11,
+                  fontWeight: 300,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: 'var(--cool)',
+                }}>
+                  {items.length === 1 ? 'result' : 'results'}
                 </span>
               </>
             )}
           </div>
-          {filters.category && (
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold)' }}>
-              {filters.category}
-            </span>
-          )}
-        </div>
-      </section>
 
-      {/* ── GRID / MAP ─────────────────────────────── */}
-      <section style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px 80px' }}>
+          {/* Active filter chips */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {filters.category && (
+              <button
+                onClick={() => setFilters(f => ({...f, category: ''}))}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--rule-warm)',
+                  cursor: 'pointer',
+                  fontFamily: 'Barlow Condensed, sans-serif',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'var(--warm)',
+                  padding: '5px 10px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {filters.category} ✕
+              </button>
+            )}
+            {filters.location && (
+              <button
+                onClick={() => setFilters(f => ({...f, location: ''}))}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--rule-warm)',
+                  cursor: 'pointer',
+                  fontFamily: 'Barlow Condensed, sans-serif',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'var(--warm)',
+                  padding: '5px 10px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {filters.location} ✕
+              </button>
+            )}
+            {filters.era && (
+              <button
+                onClick={() => setFilters(f => ({...f, era: ''}))}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--rule-warm)',
+                  cursor: 'pointer',
+                  fontFamily: 'Barlow Condensed, sans-serif',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'var(--warm)',
+                  padding: '5px 10px',
+                }}
+              >
+                {filters.era} ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Grid / Map / Loading / Empty */}
         {loading ? (
-          <div style={{ padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 32, height: 32, border: '1px solid var(--border-gold)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              Loading scenes…
+          <div style={{ padding: '100px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+            <span style={{
+              fontFamily: 'DM Mono, monospace',
+              fontSize: 12,
+              fontWeight: 300,
+              letterSpacing: '0.15em',
+              color: 'var(--cool)',
+              textTransform: 'lowercase',
+            }}>
+              — scanning catalogue —
             </span>
+            <div style={{ position: 'relative', width: 200, height: 1, background: 'var(--rule)' }}>
+              <div style={{
+                position: 'absolute',
+                top: 0, left: 0, height: '100%',
+                background: 'var(--gold)',
+                animation: 'scanLine 1.5s ease infinite',
+              }} />
+            </div>
+            <style>{`@keyframes scanLine { 0% { width: 0; } 50% { width: 100%; } 100% { width: 0; left: auto; right: 0; } }`}</style>
           </div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '100px 0', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 40, fontWeight: 300, fontStyle: 'italic', color: 'var(--text-muted)', marginBottom: 16 }}>
-              No props found.
+          <div style={{ padding: '120px 0', textAlign: 'center' }}>
+            <div style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: 56,
+              fontWeight: 300,
+              fontStyle: 'italic',
+              color: 'var(--warm)',
+              marginBottom: 20,
+            }}>
+              Nothing matched.
             </div>
-            <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
-              Try adjusting your filters or search.
+            <p style={{
+              fontFamily: 'Barlow, sans-serif',
+              fontWeight: 300,
+              fontSize: 14,
+              color: 'var(--cool)',
+              marginBottom: 36,
+            }}>
+              Adjust your filters or clear the search.
             </p>
-            <button onClick={() => { setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false }); }} className="btn-ghost" style={{ padding: '10px 28px', fontSize: 12, borderRadius: 1, cursor: 'pointer' }}>
-              Clear Filters
+            <button
+              onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false })}
+              className="btn-line"
+              style={{ padding: '12px 32px', cursor: 'pointer' }}
+            >
+              Clear All Filters
             </button>
           </div>
         ) : mapView ? (
           <PropsMap items={items} />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 1 }}>
-            {items.map((item, idx) => (
-              <Link key={item.id} href={`/items/${item.id}`} style={{ textDecoration: 'none', display: 'block', animation: `fadeUp 0.5s var(--ease-out-expo) ${Math.min(idx * 0.04, 0.3)}s both` }}>
-                <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
-                <div className="prop-card">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '40px 32px',
+          }}>
+            {items.map((item, idx) => {
+              const isFeatured = (idx + 1) % 7 === 0;
+              const catalogNum = `P·${String(idx + 1).padStart(3, '0')}`;
+              return (
+                <Link
+                  key={item.id}
+                  href={`/items/${item.id}`}
+                  style={{
+                    textDecoration: 'none',
+                    display: 'block',
+                    gridColumn: isFeatured ? 'span 2' : 'span 1',
+                    animation: `fadeUp 0.6s cubic-bezier(0.25,0,0,1) ${Math.min(idx * 0.04, 0.3)}s both`,
+                  }}
+                >
+                  <div className="prop-card">
+                    {/* Image */}
+                    <div
+                      className="prop-image"
+                      style={{
+                        aspectRatio: isFeatured ? '16/9' : '4/3',
+                        background: 'var(--surface)',
+                        overflow: 'hidden',
+                        position: 'relative',
+                      }}
+                    >
+                      {item.photos?.length > 0 ? (
+                        <img src={item.photos[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'var(--surface)',
+                        }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--rule-warm)" strokeWidth="1">
+                            <rect x="3" y="3" width="18" height="18"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                        </div>
+                      )}
 
-                  {/* Image */}
-                  <div className="prop-image" style={{ aspectRatio: '3/2', background: 'var(--bg-elevated)' }}>
-                    {item.photos?.length > 0 ? (
-                      <img src={item.photos[0]} alt={item.title} />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10, background: 'var(--bg-elevated)' }}>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--border-gold)" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.14em', textTransform: 'uppercase' }}>No Image</span>
-                      </div>
-                    )}
-                    <div className="prop-overlay" />
-
-                    {/* Badges */}
-                    <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6 }}>
-                      <span className="tag" style={{ background: 'rgba(6,5,6,0.85)', fontSize: '0.6rem' }}>{item.category}</span>
-                    </div>
-                    {item.instant_book && (
-                      <div style={{ position: 'absolute', top: 12, right: 12 }}>
-                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold)', background: 'rgba(6,5,6,0.9)', border: '1px solid var(--border-gold)', padding: '3px 8px' }}>⚡ Instant</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ padding: '18px 20px 20px', borderTop: '1px solid var(--border)' }}>
-                    <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 15, fontWeight: 500, color: 'var(--text)', marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.01em' }}>
-                      {item.title}
-                    </h3>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                      <div>
-                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 22, fontWeight: 700, color: 'var(--gold)', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                          {item.price_per_day}
-                        </span>
-                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>DHS/day</span>
-                      </div>
-                      <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                        {item.location}
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: item.condition === 'Excellent' ? '#4CAF50' : item.condition === 'Good' ? 'var(--gold)' : '#FF9800', flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.condition}</span>
-                      </div>
-                      {item.era && (
-                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{item.era}</span>
+                      {/* Instant book badge */}
+                      {item.instant_book && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 12,
+                          right: 12,
+                          fontFamily: 'DM Mono, monospace',
+                          fontSize: 9,
+                          fontWeight: 300,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          color: 'var(--gold)',
+                          background: 'rgba(7,6,10,0.88)',
+                          padding: '4px 8px',
+                        }}>
+                          ⚡ instant
+                        </div>
                       )}
                     </div>
 
-                    {item.tags && item.tags.length > 0 && (
-                      <div style={{ marginTop: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                        {item.tags.slice(0, 2).map((tag: string) => (
-                          <span key={tag} className="tag" style={{ fontSize: '0.58rem', padding: '2px 7px', opacity: 0.7 }}>{tag}</span>
-                        ))}
+                    {/* Rule */}
+                    <div style={{ height: 1, background: 'var(--rule)' }} />
+
+                    {/* Info */}
+                    <div style={{ paddingTop: 14, paddingBottom: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        {/* Left: catalog number + title */}
+                        <div style={{ flex: 1, paddingRight: 16 }}>
+                          <div className="prop-num" style={{ marginBottom: 4 }}>{catalogNum}</div>
+                          <div style={{
+                            fontFamily: 'Playfair Display, serif',
+                            fontSize: 14,
+                            fontWeight: 400,
+                            color: 'var(--cream)',
+                            lineHeight: 1.35,
+                            letterSpacing: '-0.01em',
+                          }}>
+                            {item.title}
+                          </div>
+                        </div>
+                        {/* Right: price */}
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <span style={{
+                            fontFamily: 'Barlow Condensed, sans-serif',
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: 'var(--gold)',
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1,
+                          }}>
+                            {item.price_per_day}
+                          </span>
+                          <span style={{
+                            fontFamily: 'DM Mono, monospace',
+                            fontSize: 10,
+                            fontWeight: 300,
+                            color: 'var(--cool)',
+                            marginLeft: 4,
+                          }}>
+                            /day
+                          </span>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Location + condition */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{
+                          fontFamily: 'DM Mono, monospace',
+                          fontSize: 10,
+                          fontWeight: 300,
+                          color: 'var(--cool)',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}>
+                          {item.location}
+                        </span>
+                        <div style={{
+                          width: 5,
+                          height: 5,
+                          background: item.condition === 'Excellent'
+                            ? '#4A7C5A'
+                            : item.condition === 'Good'
+                              ? 'var(--gold-lo)'
+                              : 'var(--cool)',
+                          flexShrink: 0,
+                        }} />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
 
-      {/* ── HOW IT WORKS ───────────────────────────── */}
-      {!loading && items.length > 0 && (
-        <section style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-void)', padding: '80px 0' }}>
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
-            <div style={{ textAlign: 'center', marginBottom: 64 }}>
-              <div className="eyebrow" style={{ marginBottom: 16 }}>How PropFlow Works</div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 300, fontStyle: 'italic', color: 'var(--text)' }}>
-                Simple. Professional. Cinematic.
-              </h2>
+      {/* ── FOOTER ───────────────────────────────────────── */}
+      <footer>
+        <div style={{ height: 1, background: 'var(--rule)' }} />
+
+        <div style={{
+          maxWidth: 1440,
+          margin: '0 auto',
+          padding: '72px 80px 40px',
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr 1fr',
+          gap: 64,
+        }}>
+          {/* Left: brand */}
+          <div>
+            <div style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: 40,
+              fontWeight: 300,
+              fontStyle: 'italic',
+              color: 'var(--cream)',
+              lineHeight: 1,
+              marginBottom: 20,
+            }}>
+              PropFlow
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+            <p style={{
+              fontFamily: 'Barlow, sans-serif',
+              fontWeight: 300,
+              fontSize: 13,
+              color: 'var(--cool)',
+              lineHeight: 1.75,
+              maxWidth: 240,
+              marginBottom: 32,
+            }}>
+              Morocco's first marketplace for cinema props. Every scene tells a story.
+            </p>
+            <div style={{
+              fontFamily: 'DM Mono, monospace',
+              fontSize: 10,
+              fontWeight: 300,
+              color: 'var(--cool)',
+              letterSpacing: '0.12em',
+            }}>
+              © 2025 PropFlow
+            </div>
+          </div>
+
+          {/* Center: links */}
+          <div>
+            <div style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--cool)',
+              marginBottom: 24,
+            }}>
+              Navigate
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
               {[
-                { num: '01', title: 'Browse', desc: 'Search hundreds of curated props across Morocco\'s cities. Filter by era, category, style, and city.' },
-                { num: '02', title: 'Book', desc: 'Contact the decorator directly, agree on dates, and confirm your booking. Instant Book available on select props.' },
-                { num: '03', title: 'Create', desc: 'Collect your props on the agreed date. Return them after the shoot. Leave a review to build trust.' },
-              ].map(step => (
-                <div key={step.num} style={{ padding: '48px 40px', borderRight: step.num !== '03' ? '1px solid var(--border)' : 'none', background: 'var(--bg-surface)' }}>
-                  <div style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 56, fontWeight: 300, color: 'var(--border-gold)', lineHeight: 1, marginBottom: 24 }}>{step.num}</div>
-                  <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 20, fontWeight: 500, color: 'var(--text)', marginBottom: 12 }}>{step.title}</div>
-                  <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7, fontWeight: 300 }}>{step.desc}</p>
-                </div>
+                ['Browse Props', '/'],
+                ['How It Works', '/'],
+                ['Sign Up', '/auth/signup'],
+                ['Sign In', '/auth/login'],
+                ['List Props', '/items/new'],
+                ['Dashboard', '/decorators/dashboard'],
+              ].map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  style={{
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--cool)',
+                    textDecoration: 'none',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--cool)')}
+                >
+                  {label}
+                </Link>
               ))}
             </div>
           </div>
-        </section>
-      )}
 
-      {/* ── FOOTER ─────────────────────────────────── */}
-      <footer style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-void)', padding: '56px 0 32px' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, marginBottom: 48 }}>
-            <div>
-              <div style={{ fontFamily: 'Cormorant Garamond, Playfair Display, serif', fontSize: 28, fontWeight: 300, fontStyle: 'italic', color: 'var(--gold)', marginBottom: 12 }}>PropFlow</div>
-              <p style={{ fontFamily: 'Barlow', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: 260, fontWeight: 300 }}>
-                Morocco's first marketplace for cinema prop rentals. Connecting set decorators with filmmakers since 2025.
-              </p>
+          {/* Right: cities */}
+          <div>
+            <div style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--cool)',
+              marginBottom: 24,
+            }}>
+              Cities
             </div>
-            {[
-              { title: 'Filmmakers', links: [['Browse Props', '/'], ['How It Works', '/'], ['Sign Up', '/auth/signup?role=renter']] },
-              { title: 'Decorators', links: [['List Props', '/items/new'], ['Dashboard', '/decorators/dashboard'], ['Earnings', '/decorators/earnings']] },
-              { title: 'Cities', links: LOCATIONS.map(l => [l, `/?location=${l}`]) },
-            ].map(col => (
-              <div key={col.title}>
-                <div style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>{col.title}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {col.links.map(([label, href]) => (
-                    <Link key={label} href={href} style={{ fontFamily: 'Barlow', fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 300 }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                    >
-                      {label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {LOCATIONS.map(loc => (
+                <button
+                  key={loc}
+                  onClick={() => setLocation(loc)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'DM Mono, monospace',
+                    fontSize: 11,
+                    fontWeight: 300,
+                    letterSpacing: '0.08em',
+                    color: filters.location === loc ? 'var(--gold)' : 'var(--cool)',
+                    textAlign: 'left',
+                    padding: 0,
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--warm)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = filters.location === loc ? 'var(--gold)' : 'var(--cool)')}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="divider-thin" style={{ marginBottom: 28 }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              © 2025 PropFlow · Cinema Prop Rental · Morocco
-            </span>
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-              Built for Moroccan Cinema
-            </span>
-          </div>
+        </div>
+
+        <div style={{ height: 1, background: 'var(--rule)' }} />
+
+        <div style={{
+          maxWidth: 1440,
+          margin: '0 auto',
+          padding: '20px 80px',
+          display: 'flex',
+          justifyContent: 'center',
+        }}>
+          <span style={{
+            fontFamily: 'DM Mono, monospace',
+            fontSize: 10,
+            fontWeight: 300,
+            letterSpacing: '0.18em',
+            color: 'var(--cool)',
+            textTransform: 'uppercase',
+          }}>
+            PropFlow · Cinema Prop Rental · Morocco · 2025
+          </span>
         </div>
       </footer>
     </div>
