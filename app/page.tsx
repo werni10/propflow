@@ -12,24 +12,23 @@ const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
 const ERAS       = ['1920s', '1940s', '1960s', '1970s', '1980s', 'Modern', 'Contemporary'];
 
 export default function Home() {
-  const [items, setItems]     = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mapView, setMapView] = useState(false);
+  const [items, setItems]       = useState<Item[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [mapView, setMapView]   = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [filters, setFilters] = useState({
+  const [activeFilter, setActiveFilter] = useState<'category'|'location'|'era'|null>(null);
+  const [filters, setFilters]   = useState({
     category: '', location: '', minPrice: '', maxPrice: '',
     search: '', era: '', instantBook: false,
   });
-  const [mounted, setMounted] = useState(false);
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
   useEffect(() => { fetchItems(); }, [filters]);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
   }, []);
 
   async function fetchItems() {
@@ -43,901 +42,516 @@ export default function Home() {
       if (filters.search)      p.append('search', filters.search);
       if (filters.era)         p.append('era', filters.era);
       if (filters.instantBook) p.append('instantBook', 'true');
-      const res = await fetch(`/api/items?${p}`);
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      const r = await fetch(`/api/items?${p}`);
+      const d = await r.json();
+      setItems(Array.isArray(d) ? d : []);
     } catch { setItems([]); }
     finally { setLoading(false); }
   }
 
-  function handleSearchChange(value: string) {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      setFilters(f => ({ ...f, search: value }));
-    }, 400);
+  function onSearch(v: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setFilters(f => ({ ...f, search: v })), 380);
   }
 
-  function setCategory(cat: string) {
-    setFilters(f => ({ ...f, category: f.category === cat ? '' : cat }));
+  function pick(key: string, val: string) {
+    setFilters(f => ({ ...f, [key]: f[key as keyof typeof f] === val ? '' : val }));
   }
 
-  function setLocation(loc: string) {
-    setFilters(f => ({ ...f, location: f.location === loc ? '' : loc }));
-  }
+  const hasFilters = !!(filters.category || filters.location || filters.era || filters.instantBook || filters.search || filters.minPrice || filters.maxPrice);
 
-  const hasActiveFilters = filters.category || filters.location || filters.minPrice || filters.maxPrice || filters.search || filters.era || filters.instantBook;
+  const pillBase: React.CSSProperties = {
+    display: 'inline-block',
+    padding: '6px 16px',
+    fontFamily: "'Outfit', sans-serif",
+    fontSize: 12,
+    fontWeight: 400,
+    letterSpacing: '0.04em',
+    cursor: 'pointer',
+    border: '1px solid var(--line)',
+    background: 'transparent',
+    color: 'var(--ink-mid)',
+    transition: 'all 0.15s ease',
+    whiteSpace: 'nowrap' as const,
+  };
+
+  const pillActive: React.CSSProperties = {
+    ...pillBase,
+    background: 'var(--ink)',
+    color: 'var(--bg)',
+    border: '1px solid var(--ink)',
+  };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ink)' }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
 
-      {/* ── NAV ────────────────────────────────────────────── */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        height: 56,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 40px',
-        borderBottom: scrolled ? '1px solid var(--rule)' : '1px solid transparent',
-        background: scrolled ? 'rgba(253,252,249,0.97)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        transition: 'all 0.4s cubic-bezier(0.25, 0, 0, 1)',
+      {/* ──────────────── NAV ──────────────── */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+        height: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 48px',
+        background: scrolled ? 'rgba(255,255,255,0.94)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(16px)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--line)' : '1px solid transparent',
+        transition: 'all 0.35s var(--ease)',
       }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <span style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: 22,
-            fontWeight: 300,
+            fontFamily: "'Cormorant', Georgia, serif",
             fontStyle: 'italic',
-            color: 'var(--gold)',
-            letterSpacing: '0.01em',
-          }}>PropFlow</span>
+            fontWeight: 400,
+            fontSize: 24,
+            color: 'var(--ink)',
+            letterSpacing: '-0.01em',
+          }}>
+            PropFlow
+          </span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
+          {[
+            { label: 'Browse', href: '#catalogue' },
+            { label: 'Decorators', href: '/decorators/dashboard' },
+          ].map(({ label, href }) => (
+            <Link key={label} href={href} style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: 13,
+              fontWeight: 400,
+              color: 'var(--ink-mid)',
+              textDecoration: 'none',
+              letterSpacing: '0.02em',
+              transition: 'color 0.15s ease',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-mid)')}
+            >
+              {label}
+            </Link>
+          ))}
           <Link href="/auth/login" style={{
-            fontFamily: 'Barlow Condensed, sans-serif',
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: 'var(--warm)',
+            fontFamily: "'Outfit', sans-serif",
+            fontSize: 13,
+            fontWeight: 400,
+            color: 'var(--ink-mid)',
             textDecoration: 'none',
-            transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
+            letterSpacing: '0.02em',
+            transition: 'color 0.15s ease',
           }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--warm)')}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-mid)')}
           >
-            Sign In
+            Sign in
           </Link>
-          <Link href="/auth/signup" style={{
-            fontFamily: 'Barlow Condensed, sans-serif',
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: 'var(--cream)',
+          <Link href="/auth/signup" className="btn-dark" style={{
+            padding: '9px 22px',
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: '0.06em',
             textDecoration: 'none',
-            transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream)')}
-          >
-            List a Prop →
+          }}>
+            Get started
           </Link>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {/* ── HERO ─────────────────────────────────────────── */}
+      {/* ──────────────── HERO ──────────────── */}
       <section style={{
-        position: 'relative',
         minHeight: '100vh',
-        display: 'grid',
-        gridTemplateColumns: '60fr 40fr',
-        borderBottom: '1px solid var(--rule)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        padding: '0 48px 64px',
+        position: 'relative',
+        borderBottom: '1px solid var(--line)',
         overflow: 'hidden',
       }}>
+        {/* Background grid lines — architectural */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          {[20, 45, 70].map(pct => (
+            <div key={pct} style={{
+              position: 'absolute', top: 0, bottom: 0,
+              left: `${pct}%`, width: 1,
+              background: 'var(--line)', opacity: 0.5,
+            }} />
+          ))}
+        </div>
 
-        {/* Left column */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '120px 80px 80px 80px',
-          borderRight: '1px solid var(--rule)',
-          position: 'relative',
+        {/* Top-right corner meta */}
+        <div className="fade-in d1" style={{
+          position: 'absolute', top: 80, right: 48,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
         }}>
+          <span className="label">Morocco · Est. 2025</span>
+          <span className="label">Cinema Prop Marketplace</span>
+        </div>
 
-          {/* Eyebrow */}
-          <div className="animate-fade-up" style={{
-            fontFamily: 'DM Mono, monospace',
-            fontSize: 10,
-            fontWeight: 300,
-            letterSpacing: '0.22em',
-            color: 'var(--cool)',
-            textTransform: 'uppercase',
-            marginBottom: 40,
-          }}>
-            PROP.MA&nbsp;&nbsp;/&nbsp;&nbsp;MOROCCO&nbsp;&nbsp;/&nbsp;&nbsp;EST. 2025
-          </div>
+        {/* Main headline */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
+          <p className="label fade-up d1" style={{ marginBottom: 32 }}>
+            No. 001 — The Prop Catalogue
+          </p>
 
-          {/* Headline */}
-          <h1 className="animate-fade-up delay-1" style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: 'clamp(64px, 8vw, 120px)',
+          <h1 className="fade-up d2" style={{
+            fontFamily: "'Cormorant', Georgia, serif",
             fontWeight: 300,
-            fontStyle: 'normal',
-            lineHeight: 0.95,
-            color: 'var(--cream)',
-            letterSpacing: '-0.02em',
+            fontSize: 'clamp(72px, 10vw, 148px)',
+            lineHeight: 0.92,
+            letterSpacing: '-0.03em',
+            color: 'var(--ink)',
             marginBottom: 0,
           }}>
-            Every prop
+            Every scene
           </h1>
-          <h1 className="animate-fade-up delay-2" style={{
-            fontFamily: 'Cormorant Garamond, serif',
-            fontSize: 'clamp(64px, 8vw, 120px)',
-            fontWeight: 300,
+          <h1 className="fade-up d3" style={{
+            fontFamily: "'Cormorant', Georgia, serif",
             fontStyle: 'italic',
-            lineHeight: 0.95,
+            fontWeight: 300,
+            fontSize: 'clamp(72px, 10vw, 148px)',
+            lineHeight: 0.92,
+            letterSpacing: '-0.03em',
             color: 'var(--gold)',
-            letterSpacing: '-0.02em',
             marginBottom: 48,
           }}>
             tells a story.
           </h1>
 
-          {/* Body copy */}
-          <p className="animate-fade-up delay-3" style={{
-            fontFamily: 'Barlow, sans-serif',
-            fontWeight: 300,
-            fontSize: 15,
-            color: 'var(--warm)',
-            maxWidth: 360,
-            lineHeight: 1.8,
-            marginBottom: 56,
+          <div className="fade-up d4" style={{
+            display: 'flex', alignItems: 'center', gap: 40,
           }}>
-            Morocco's first marketplace for cinema props. From Casablanca medinas to Marrakech riads — find the exact piece your scene demands.
-          </p>
+            <p style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontWeight: 300,
+              fontSize: 16,
+              color: 'var(--ink-mid)',
+              lineHeight: 1.7,
+              maxWidth: 380,
+            }}>
+              Morocco's first marketplace for cinema props. Hundreds of pieces, five cities, one platform.
+            </p>
 
-          {/* CTAs */}
-          <div className="animate-fade-up delay-4" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-            <Link href="#catalogue" style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: 'var(--cream)',
-              textDecoration: 'none',
-              transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--gold)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream)')}
-            >
-              Browse Props →
-            </Link>
-            <span style={{ fontFamily: 'Barlow Condensed', fontSize: 12, color: 'var(--cool)', margin: '0 20px' }}>·</span>
-            <Link href="/auth/signup?role=decorator" style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: 'var(--warm)',
-              textDecoration: 'none',
-              transition: 'color 0.25s cubic-bezier(0.25,0,0,1)',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--warm)')}
-            >
-              List Your Props
-            </Link>
+            <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+              <Link href="/auth/signup?role=renter" className="btn-dark" style={{
+                padding: '14px 32px', fontSize: 12, fontWeight: 500,
+                letterSpacing: '0.06em', textDecoration: 'none',
+              }}>
+                Browse props
+              </Link>
+              <Link href="/auth/signup?role=decorator" className="btn-outline" style={{
+                padding: '14px 32px', fontSize: 12, fontWeight: 500,
+                letterSpacing: '0.06em', textDecoration: 'none',
+              }}>
+                List your props
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Right column — stats */}
+        {/* Bottom stats bar */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '120px 56px 80px 56px',
-          position: 'relative',
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          borderTop: '1px solid var(--line)',
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         }}>
           {[
-            { num: items.length > 0 ? `${items.length}+` : '200+', label: 'PROPS AVAILABLE' },
-            { num: '50+',  label: 'DECORATORS' },
-            { num: '5',    label: 'MOROCCAN CITIES' },
-          ].map((stat, i) => (
-            <div key={i}>
-              {i > 0 && <div className="rule" style={{ margin: '0' }} />}
-              <div style={{ padding: '40px 0' }}>
-                <div className={`animate-fade-up delay-${i + 1}`} style={{
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontSize: 'clamp(40px, 5vw, 72px)',
-                  fontWeight: 300,
-                  color: 'var(--cream)',
-                  lineHeight: 1,
-                  letterSpacing: '-0.02em',
-                  marginBottom: 12,
-                }}>
-                  {stat.num}
-                </div>
-                <div style={{
-                  fontFamily: 'DM Mono, monospace',
-                  fontSize: 10,
-                  fontWeight: 300,
-                  letterSpacing: '0.2em',
-                  color: 'var(--cool)',
-                  textTransform: 'uppercase',
-                }}>
-                  {stat.label}
-                </div>
-              </div>
+            { n: `${!loading ? items.length : '—'}`, l: 'Props listed' },
+            { n: '5', l: 'Moroccan cities' },
+            { n: '50+', l: 'Decorators' },
+            { n: 'Free', l: 'To browse' },
+          ].map((s, i) => (
+            <div key={i} style={{
+              padding: '24px 40px',
+              borderRight: i < 3 ? '1px solid var(--line)' : 'none',
+              display: 'flex', flexDirection: 'column', gap: 6,
+            }}>
+              <span style={{
+                fontFamily: "'Cormorant', serif", fontWeight: 300,
+                fontSize: 40, lineHeight: 1, color: 'var(--ink)',
+              }}>{s.n}</span>
+              <span className="label">{s.l}</span>
             </div>
           ))}
-
-          {/* Film strip decoration */}
-          <div style={{ marginTop: 24 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', width: 28, color: 'var(--rule)', opacity: 0.6 }} className="film-strip">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="film-strip-cell" style={{ height: 28 }}>
-                  <div className="film-strip-hole" />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* ── SEARCH LINE ──────────────────────────────────── */}
-      <div id="catalogue" style={{
-        borderBottom: '1px solid var(--rule)',
-        background: 'var(--void)',
-        position: 'sticky',
-        top: 56,
-        zIndex: 90,
-      }}>
-        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 80px' }}>
+      {/* ──────────────── CATALOGUE ──────────────── */}
+      <section id="catalogue" style={{ paddingTop: 64 }}>
 
-          {/* Search input */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cool)" strokeWidth="1.5" style={{ position: 'absolute', left: 0, pointerEvents: 'none', flexShrink: 0 }}>
+        {/* Search + filters */}
+        <div style={{
+          padding: '0 48px 32px',
+          borderBottom: '1px solid var(--line)',
+        }}>
+          {/* Search */}
+          <div style={{ position: 'relative', marginBottom: 28 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-ghost)" strokeWidth="1.5" strokeLinecap="round" style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input
               ref={searchRef}
               type="text"
-              placeholder="Search by title, style, era..."
+              placeholder="Search props by name, style, or era…"
               defaultValue={filters.search}
-              onChange={e => handleSearchChange(e.target.value)}
+              onChange={e => onSearch(e.target.value)}
               style={{
+                width: '100%',
+                padding: '12px 0 12px 28px',
+                fontFamily: "'Outfit', sans-serif",
+                fontSize: 18,
+                fontWeight: 300,
                 background: 'transparent',
                 border: 'none',
-                borderBottom: '1px solid var(--rule-warm)',
+                borderBottom: '1px solid var(--line)',
                 outline: 'none',
-                width: '100%',
-                padding: '20px 0 20px 28px',
-                fontFamily: 'Barlow, sans-serif',
-                fontWeight: 300,
-                fontSize: 15,
-                color: 'var(--cream)',
-                transition: 'border-color 0.25s cubic-bezier(0.25,0,0,1)',
+                color: 'var(--ink)',
+                transition: 'border-color 0.2s ease',
               }}
-              onFocus={e => (e.target.style.borderBottomColor = 'var(--gold)')}
-              onBlur={e => (e.target.style.borderBottomColor = 'var(--rule-warm)')}
+              onFocus={e => (e.target.style.borderBottomColor = 'var(--ink)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'var(--line)')}
             />
           </div>
 
           {/* Filter pills */}
-          <div style={{
-            display: 'flex',
-            gap: 0,
-            alignItems: 'center',
-            overflowX: 'auto',
-            padding: '14px 0',
-            scrollbarWidth: 'none',
-          }}>
-            {/* Location pills */}
-            {['All', ...LOCATIONS].map(loc => {
-              const active = loc === 'All' ? !filters.location : filters.location === loc;
-              return (
-                <button
-                  key={loc}
-                  onClick={() => loc === 'All' ? setFilters(f => ({...f, location: ''})) : setLocation(loc)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: active ? '2px solid var(--gold)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    fontFamily: 'Barlow Condensed, sans-serif',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: active ? 'var(--gold)' : 'var(--cool)',
-                    padding: '4px 16px 6px',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
-                    marginRight: 4,
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--warm)'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--cool)'; }}
-                >
-                  {loc}
-                </button>
-              );
-            })}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <span className="label" style={{ marginRight: 8 }}>Filter</span>
 
-            {/* Separator */}
-            <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
+            {CATEGORIES.map(c => (
+              <button key={c} onClick={() => pick('category', c)}
+                style={filters.category === c ? pillActive : pillBase}
+                onMouseEnter={e => { if (filters.category !== c) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ink-mid)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink)'; }}}
+                onMouseLeave={e => { if (filters.category !== c) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink-mid)'; }}}
+              >{c}</button>
+            ))}
 
-            {/* Category pills */}
-            {CATEGORIES.map(cat => {
-              const active = filters.category === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setCategory(cat)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: active ? '2px solid var(--gold)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    fontFamily: 'Barlow Condensed, sans-serif',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: active ? 'var(--gold)' : 'var(--cool)',
-                    padding: '4px 16px 6px',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
-                    marginRight: 4,
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--warm)'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--cool)'; }}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+            <div style={{ width: 1, height: 20, background: 'var(--line)', margin: '0 4px' }} />
 
-            {/* Separator */}
-            <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
+            {LOCATIONS.map(l => (
+              <button key={l} onClick={() => pick('location', l)}
+                style={filters.location === l ? pillActive : pillBase}
+                onMouseEnter={e => { if (filters.location !== l) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--ink-mid)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink)'; }}}
+                onMouseLeave={e => { if (filters.location !== l) { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink-mid)'; }}}
+              >{l}</button>
+            ))}
 
-            {/* Special toggles */}
+            <div style={{ width: 1, height: 20, background: 'var(--line)', margin: '0 4px' }} />
+
             <button
               onClick={() => setFilters(f => ({...f, instantBook: !f.instantBook}))}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: filters.instantBook ? '2px solid var(--gold)' : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'Barlow Condensed, sans-serif',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: filters.instantBook ? 'var(--gold)' : 'var(--cool)',
-                padding: '4px 16px 6px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
-                marginRight: 4,
-              }}
+              style={filters.instantBook ? { ...pillActive, background: 'var(--gold)', borderColor: 'var(--gold)' } : pillBase}
             >
               ⚡ Instant Book
             </button>
 
             <button
               onClick={() => setMapView(v => !v)}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: mapView ? '2px solid var(--gold)' : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'Barlow Condensed, sans-serif',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: mapView ? 'var(--gold)' : 'var(--cool)',
-                padding: '4px 16px 6px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.25s cubic-bezier(0.25,0,0,1)',
-              }}
+              style={mapView ? pillActive : pillBase}
             >
               ◎ Map
             </button>
 
-            {hasActiveFilters && (
-              <>
-                <div style={{ width: 1, height: 16, background: 'var(--rule)', margin: '0 8px', flexShrink: 0 }} />
-                <button
-                  onClick={() => {
-                    setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false });
-                    if (searchRef.current) searchRef.current.value = '';
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: 'DM Mono, monospace',
-                    fontSize: 10,
-                    fontWeight: 300,
-                    letterSpacing: '0.1em',
-                    color: 'var(--cool)',
-                    padding: '4px 8px 6px',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--warm)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--cool)')}
-                >
-                  ✕ clear
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── RESULTS ──────────────────────────────────────── */}
-      <section style={{ maxWidth: 1440, margin: '0 auto', padding: '56px 80px 120px' }}>
-
-        {/* Results header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          marginBottom: 40,
-          paddingBottom: 32,
-          borderBottom: '1px solid var(--rule)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-            {!loading && (
-              <>
-                <span style={{
-                  fontFamily: 'Cormorant Garamond, serif',
-                  fontSize: 48,
-                  fontWeight: 300,
-                  fontStyle: 'italic',
-                  color: 'var(--cream)',
-                  lineHeight: 1,
-                }}>
-                  {items.length}
-                </span>
-                <span style={{
-                  fontFamily: 'DM Mono, monospace',
-                  fontSize: 11,
-                  fontWeight: 300,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: 'var(--cool)',
-                }}>
-                  {items.length === 1 ? 'result' : 'results'}
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Active filter chips */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {filters.category && (
-              <button
-                onClick={() => setFilters(f => ({...f, category: ''}))}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--rule-warm)',
-                  cursor: 'pointer',
-                  fontFamily: 'Barlow Condensed, sans-serif',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--warm)',
-                  padding: '5px 10px',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {filters.category} ✕
+            {hasFilters && (
+              <button onClick={() => { setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false }); if (searchRef.current) searchRef.current.value = ''; }}
+                style={{ ...pillBase, color: 'var(--ink-ghost)', border: 'none', padding: '6px 8px' }}>
+                × Clear
               </button>
             )}
-            {filters.location && (
-              <button
-                onClick={() => setFilters(f => ({...f, location: ''}))}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--rule-warm)',
-                  cursor: 'pointer',
-                  fontFamily: 'Barlow Condensed, sans-serif',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--warm)',
-                  padding: '5px 10px',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {filters.location} ✕
-              </button>
-            )}
-            {filters.era && (
-              <button
-                onClick={() => setFilters(f => ({...f, era: ''}))}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--rule-warm)',
-                  cursor: 'pointer',
-                  fontFamily: 'Barlow Condensed, sans-serif',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--warm)',
-                  padding: '5px 10px',
-                }}
-              >
-                {filters.era} ✕
-              </button>
-            )}
-          </div>
-        </div>
 
-        {/* Grid / Map / Loading / Empty */}
-        {loading ? (
-          <div style={{ padding: '100px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
             <span style={{
-              fontFamily: 'DM Mono, monospace',
-              fontSize: 12,
+              marginLeft: 'auto',
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: 13,
+              color: 'var(--ink-soft)',
               fontWeight: 300,
-              letterSpacing: '0.15em',
-              color: 'var(--cool)',
-              textTransform: 'lowercase',
             }}>
-              — scanning catalogue —
+              {!loading && `${items.length} ${items.length === 1 ? 'prop' : 'props'}`}
             </span>
-            <div style={{ position: 'relative', width: 200, height: 1, background: 'var(--rule)' }}>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div style={{ padding: '0 48px 96px' }}>
+          {loading ? (
+            <div style={{ padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
               <div style={{
-                position: 'absolute',
-                top: 0, left: 0, height: '100%',
-                background: 'var(--gold)',
-                animation: 'scanLine 1.5s ease infinite',
-              }} />
+                width: 240, height: 1,
+                background: 'var(--line)',
+                position: 'relative', overflow: 'hidden',
+              }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'var(--ink)',
+                  animation: 'scan 1.4s var(--ease) infinite',
+                }} />
+                <style>{`@keyframes scan { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }`}</style>
+              </div>
+              <span className="label">Loading catalogue</span>
             </div>
-            <style>{`@keyframes scanLine { 0% { width: 0; } 50% { width: 100%; } 100% { width: 0; left: auto; right: 0; } }`}</style>
-          </div>
-        ) : items.length === 0 ? (
-          <div style={{ padding: '120px 0', textAlign: 'center' }}>
+          ) : items.length === 0 ? (
+            <div style={{ padding: '120px 0', textAlign: 'center' }}>
+              <p style={{ fontFamily: "'Cormorant', serif", fontStyle: 'italic', fontSize: 52, fontWeight: 300, color: 'var(--ink-soft)', marginBottom: 16 }}>Nothing found.</p>
+              <button onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false })} className="btn-outline" style={{ padding: '10px 24px', fontSize: 12, cursor: 'pointer', marginTop: 8 }}>Clear filters</button>
+            </div>
+          ) : mapView ? (
+            <div style={{ paddingTop: 40 }}><PropsMap items={items} /></div>
+          ) : (
             <div style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: 56,
-              fontWeight: 300,
-              fontStyle: 'italic',
-              color: 'var(--warm)',
-              marginBottom: 20,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '1px',
+              background: 'var(--line)',
+              border: '1px solid var(--line)',
+              marginTop: 1,
             }}>
-              Nothing matched.
-            </div>
-            <p style={{
-              fontFamily: 'Barlow, sans-serif',
-              fontWeight: 300,
-              fontSize: 14,
-              color: 'var(--cool)',
-              marginBottom: 36,
-            }}>
-              Adjust your filters or clear the search.
-            </p>
-            <button
-              onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false })}
-              className="btn-line"
-              style={{ padding: '12px 32px', cursor: 'pointer' }}
-            >
-              Clear All Filters
-            </button>
-          </div>
-        ) : mapView ? (
-          <PropsMap items={items} />
-        ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '40px 32px',
-          }}>
-            {items.map((item, idx) => {
-              const isFeatured = (idx + 1) % 7 === 0;
-              const catalogNum = `P·${String(idx + 1).padStart(3, '0')}`;
-              return (
+              {items.map((item, idx) => (
                 <Link
                   key={item.id}
                   href={`/items/${item.id}`}
-                  style={{
-                    textDecoration: 'none',
-                    display: 'block',
-                    gridColumn: isFeatured ? 'span 2' : 'span 1',
-                    animation: `fadeUp 0.6s cubic-bezier(0.25,0,0,1) ${Math.min(idx * 0.04, 0.3)}s both`,
-                  }}
+                  style={{ textDecoration: 'none', display: 'block', background: 'var(--bg)', gridColumn: idx % 9 === 0 ? 'span 2' : 'span 1' }}
                 >
                   <div className="prop-card">
                     {/* Image */}
-                    <div
-                      className="prop-image"
-                      style={{
-                        aspectRatio: isFeatured ? '16/9' : '4/3',
-                        background: 'var(--surface)',
-                        overflow: 'hidden',
-                        position: 'relative',
-                      }}
-                    >
+                    <div className="prop-image" style={{ aspectRatio: idx % 9 === 0 ? '16/9' : '4/3', background: 'var(--bg-warm)' }}>
                       {item.photos?.length > 0 ? (
-                        <img src={item.photos[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <img src={item.photos[0]} alt={item.title} />
                       ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'var(--surface)',
-                        }}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--rule-warm)" strokeWidth="1">
-                            <rect x="3" y="3" width="18" height="18"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21 15 16 10 5 21"/>
-                          </svg>
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-soft)' }}>
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--line-mid)" strokeWidth="1"><rect x="3" y="3" width="18" height="18"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         </div>
                       )}
-
-                      {/* Instant book badge */}
                       {item.instant_book && (
-                        <div style={{
-                          position: 'absolute',
-                          top: 12,
-                          right: 12,
-                          fontFamily: 'DM Mono, monospace',
-                          fontSize: 9,
-                          fontWeight: 300,
-                          letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
-                          color: 'var(--gold)',
-                          background: 'rgba(247,245,240,0.92)',
-                          padding: '4px 8px',
-                        }}>
-                          ⚡ instant
+                        <div style={{ position: 'absolute', top: 12, left: 12 }}>
+                          <span style={{ background: 'var(--gold)', color: 'white', fontFamily: "'Outfit', sans-serif", fontSize: 10, fontWeight: 500, padding: '3px 8px', letterSpacing: '0.06em' }}>
+                            INSTANT
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Rule */}
-                    <div style={{ height: 1, background: 'var(--rule)' }} />
-
                     {/* Info */}
-                    <div style={{ paddingTop: 14, paddingBottom: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        {/* Left: catalog number + title */}
-                        <div style={{ flex: 1, paddingRight: 16 }}>
-                          <div className="prop-num" style={{ marginBottom: 4 }}>{catalogNum}</div>
-                          <div style={{
-                            fontFamily: 'Playfair Display, serif',
-                            fontSize: 14,
-                            fontWeight: 400,
-                            color: 'var(--cream)',
-                            lineHeight: 1.35,
-                            letterSpacing: '-0.01em',
-                          }}>
-                            {item.title}
-                          </div>
-                        </div>
-                        {/* Right: price */}
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <span style={{
-                            fontFamily: 'Barlow Condensed, sans-serif',
-                            fontSize: 18,
-                            fontWeight: 700,
-                            color: 'var(--gold)',
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1,
-                          }}>
-                            {item.price_per_day}
-                          </span>
-                          <span style={{
-                            fontFamily: 'DM Mono, monospace',
-                            fontSize: 10,
-                            fontWeight: 300,
-                            color: 'var(--cool)',
-                            marginLeft: 4,
-                          }}>
-                            /day
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Location + condition */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{
-                          fontFamily: 'DM Mono, monospace',
-                          fontSize: 10,
-                          fontWeight: 300,
-                          color: 'var(--cool)',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                        }}>
-                          {item.location}
+                    <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--line)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <span className="prop-num">P·{String(idx + 1).padStart(3, '0')}</span>
+                        <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 500, color: 'var(--ink)' }}>
+                          {item.price_per_day} <span style={{ fontSize: 11, fontWeight: 300, color: 'var(--ink-soft)' }}>DHS</span>
                         </span>
-                        <div style={{
-                          width: 5,
-                          height: 5,
-                          background: item.condition === 'Excellent'
-                            ? '#4A7C5A'
-                            : item.condition === 'Good'
-                              ? 'var(--gold-lo)'
-                              : 'var(--cool)',
-                          flexShrink: 0,
-                        }} />
                       </div>
+                      <h3 style={{
+                        fontFamily: "'Cormorant', Georgia, serif",
+                        fontSize: 18, fontWeight: 400,
+                        color: 'var(--ink)', lineHeight: 1.2,
+                        marginBottom: 8, letterSpacing: '-0.01em',
+                      }}>
+                        {item.title}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="label" style={{ fontSize: 9 }}>{item.location}</span>
+                        <span style={{ width: 3, height: 3, borderRadius: '50%', flexShrink: 0, background: item.condition === 'Excellent' ? '#4CAF50' : item.condition === 'Good' ? 'var(--gold)' : '#E69B3A' }} />
+                        <span className="label" style={{ fontSize: 9 }}>{item.condition}</span>
+                      </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div style={{ marginTop: 10, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {item.tags.slice(0, 2).map((t: string) => (
+                            <span key={t} className="tag" style={{ fontSize: 9 }}>{t}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────────── */}
-      <footer>
-        <div style={{ height: 1, background: 'var(--rule)' }} />
-
-        <div style={{
-          maxWidth: 1440,
-          margin: '0 auto',
-          padding: '72px 80px 40px',
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr',
-          gap: 64,
-        }}>
-          {/* Left: brand */}
-          <div>
-            <div style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: 40,
-              fontWeight: 300,
-              fontStyle: 'italic',
-              color: 'var(--cream)',
-              lineHeight: 1,
-              marginBottom: 20,
-            }}>
-              PropFlow
-            </div>
-            <p style={{
-              fontFamily: 'Barlow, sans-serif',
-              fontWeight: 300,
-              fontSize: 13,
-              color: 'var(--cool)',
-              lineHeight: 1.75,
-              maxWidth: 240,
-              marginBottom: 32,
-            }}>
-              Morocco's first marketplace for cinema props. Every scene tells a story.
-            </p>
-            <div style={{
-              fontFamily: 'DM Mono, monospace',
-              fontSize: 10,
-              fontWeight: 300,
-              color: 'var(--cool)',
-              letterSpacing: '0.12em',
-            }}>
-              © 2025 PropFlow
-            </div>
+      {/* ──────────────── HOW IT WORKS ──────────────── */}
+      <section style={{ borderTop: '1px solid var(--line)', background: 'var(--bg-soft)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ padding: '64px 48px', borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <span className="label" style={{ marginBottom: 20 }}>How it works</span>
+            <h2 style={{ fontFamily: "'Cormorant', serif", fontStyle: 'italic', fontWeight: 300, fontSize: 44, lineHeight: 1, color: 'var(--ink)', letterSpacing: '-0.02em' }}>
+              Simple.<br/>Professional.
+            </h2>
           </div>
-
-          {/* Center: links */}
-          <div>
-            <div style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: 'var(--cool)',
-              marginBottom: 24,
-            }}>
-              Navigate
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
-              {[
-                ['Browse Props', '/'],
-                ['How It Works', '/'],
-                ['Sign Up', '/auth/signup'],
-                ['Sign In', '/auth/login'],
-                ['List Props', '/items/new'],
-                ['Dashboard', '/decorators/dashboard'],
-              ].map(([label, href]) => (
-                <Link
-                  key={label}
-                  href={href}
-                  style={{
-                    fontFamily: 'Barlow Condensed, sans-serif',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'var(--cool)',
-                    textDecoration: 'none',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--cool)')}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: cities */}
-          <div>
-            <div style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: 'var(--cool)',
-              marginBottom: 24,
-            }}>
-              Cities
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {LOCATIONS.map(loc => (
-                <button
-                  key={loc}
-                  onClick={() => setLocation(loc)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: 'DM Mono, monospace',
-                    fontSize: 11,
-                    fontWeight: 300,
-                    letterSpacing: '0.08em',
-                    color: filters.location === loc ? 'var(--gold)' : 'var(--cool)',
-                    textAlign: 'left',
-                    padding: 0,
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--warm)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = filters.location === loc ? 'var(--gold)' : 'var(--cool)')}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {[
+              { n: '01', title: 'Browse', body: 'Search props by category, city, era, or style. Filter by instant availability.' },
+              { n: '02', title: 'Book', body: 'Contact the decorator. Confirm dates and pricing. Instant Book on select props.' },
+              { n: '03', title: 'Create', body: 'Collect your props. Return after the shoot. Build your production's reputation.' },
+            ].map((s, i) => (
+              <div key={s.n} style={{
+                padding: '64px 40px',
+                borderRight: i < 2 ? '1px solid var(--line)' : 'none',
+              }}>
+                <div style={{ fontFamily: "'Cormorant', serif", fontSize: 48, fontWeight: 300, color: 'var(--line-mid)', lineHeight: 1, marginBottom: 24 }}>{s.n}</div>
+                <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 16, fontWeight: 500, color: 'var(--ink)', marginBottom: 12 }}>{s.title}</h3>
+                <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 14, fontWeight: 300, color: 'var(--ink-mid)', lineHeight: 1.7 }}>{s.body}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div style={{ height: 1, background: 'var(--rule)' }} />
-
+        {/* CTA band */}
         <div style={{
-          maxWidth: 1440,
-          margin: '0 auto',
-          padding: '20px 80px',
-          display: 'flex',
-          justifyContent: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '40px 48px',
+          borderBottom: '1px solid var(--line)',
         }}>
-          <span style={{
-            fontFamily: 'DM Mono, monospace',
-            fontSize: 10,
-            fontWeight: 300,
-            letterSpacing: '0.18em',
-            color: 'var(--cool)',
-            textTransform: 'uppercase',
+          <div>
+            <h3 style={{ fontFamily: "'Cormorant', serif", fontStyle: 'italic', fontWeight: 300, fontSize: 32, color: 'var(--ink)', marginBottom: 4 }}>
+              Are you a set decorator?
+            </h3>
+            <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 14, fontWeight: 300, color: 'var(--ink-mid)' }}>
+              Monetize your prop inventory. Join Morocco's film community.
+            </p>
+          </div>
+          <Link href="/auth/signup?role=decorator" className="btn-dark" style={{
+            padding: '14px 36px', fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', textDecoration: 'none', flexShrink: 0,
           }}>
-            PropFlow · Cinema Prop Rental · Morocco · 2025
+            Start listing
+          </Link>
+        </div>
+      </section>
+
+      {/* ──────────────── FOOTER ──────────────── */}
+      <footer style={{ background: 'var(--bg-accent)', color: '#F2EBD8' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr',
+          gap: 0,
+          borderBottom: '1px solid #2A2520',
+        }}>
+          <div style={{ padding: '56px 48px', borderRight: '1px solid #2A2520' }}>
+            <div style={{ fontFamily: "'Cormorant', serif", fontStyle: 'italic', fontWeight: 400, fontSize: 32, color: '#C8A420', marginBottom: 16 }}>PropFlow</div>
+            <p style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 300, fontSize: 13, color: '#6B6358', lineHeight: 1.7, maxWidth: 240 }}>
+              Morocco's first marketplace for cinema prop rentals. Every scene deserves the right prop.
+            </p>
+          </div>
+          {[
+            { title: 'Platform', links: [['Browse Props', '/'], ['List Props', '/items/new'], ['Sign Up', '/auth/signup'], ['Sign In', '/auth/login']] },
+            { title: 'Cities', links: LOCATIONS.map(l => [l, `/?location=${l}`]) },
+            { title: 'Account', links: [['Dashboard', '/decorators/dashboard'], ['Bookings', '/bookings'], ['Earnings', '/decorators/earnings'], ['Admin', '/admin/dashboard']] },
+          ].map((col, i) => (
+            <div key={col.title} style={{ padding: '56px 40px', borderRight: i < 2 ? '1px solid #2A2520' : 'none' }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#504A40', marginBottom: 20 }}>{col.title}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {col.links.map(([label, href]) => (
+                  <Link key={label} href={href} style={{ fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 300, color: '#6B6358', textDecoration: 'none', transition: 'color 0.15s ease' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#F2EBD8')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#6B6358')}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: '#504A40', textTransform: 'uppercase' }}>
+            © 2025 PropFlow
+          </span>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', color: '#504A40', textTransform: 'uppercase' }}>
+            Cinema Prop Rental · Morocco
           </span>
         </div>
       </footer>
