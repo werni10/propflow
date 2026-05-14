@@ -54,6 +54,29 @@ export async function POST(request: NextRequest) {
       total_price,
     } = body;
 
+    // Fetch item to check instant_book and discount fields
+    const { data: itemData, error: itemError } = await getSupabase()
+      .from('items')
+      .select('instant_book, weekly_discount, monthly_discount, price_per_day')
+      .eq('id', item_id)
+      .single();
+
+    if (itemError) return NextResponse.json({ error: itemError.message }, { status: 400 });
+
+    // Determine booking status
+    const bookingStatus = itemData?.instant_book === true ? 'confirmed' : 'payment_pending';
+
+    // Calculate discount
+    const days = Math.ceil(
+      (new Date(end_date).getTime() - new Date(start_date).getTime()) / 86400000
+    );
+    let finalPrice = total_price;
+    if (days >= 30 && (itemData?.monthly_discount ?? 0) > 0) {
+      finalPrice = total_price * (1 - (itemData.monthly_discount as number) / 100);
+    } else if (days >= 7 && (itemData?.weekly_discount ?? 0) > 0) {
+      finalPrice = total_price * (1 - (itemData.weekly_discount as number) / 100);
+    }
+
     const { data, error } = await getSupabase()
       .from('bookings')
       .insert([
@@ -64,8 +87,8 @@ export async function POST(request: NextRequest) {
           start_date,
           end_date,
           quantity,
-          total_price,
-          status: 'payment_pending',
+          total_price: Math.round(finalPrice * 100) / 100,
+          status: bookingStatus,
         },
       ])
       .select();

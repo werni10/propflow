@@ -22,6 +22,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     }
 
+    const search = searchParams.get('search');
+    const era = searchParams.get('era');
+    const tag = searchParams.get('tags');
+    const instantBook = searchParams.get('instantBook');
+
     let query = getSupabase().from('items').select('*, decorators:decorator_id(*)');
 
     if (decoratorId) query = query.eq('decorator_id', decoratorId);
@@ -29,6 +34,10 @@ export async function GET(request: NextRequest) {
     if (location) query = query.ilike('location', `%${location}%`);
     if (minPrice) query = query.gte('price_per_day', parseFloat(minPrice));
     if (maxPrice) query = query.lte('price_per_day', parseFloat(maxPrice));
+    if (search) query = query.textSearch('search_vector', search, { type: 'websearch' });
+    if (era) query = query.eq('era', era);
+    if (tag) query = query.contains('tags', [tag]);
+    if (instantBook === 'true') query = query.eq('instant_book', true);
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -87,11 +96,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, category, price_per_day, condition, location, deposit_required, deposit_amount } = body;
+    const { title, description, category, price_per_day, condition, location, deposit_required, deposit_amount, tags, era, instant_book, whatsapp_number, weekly_discount, monthly_discount } = body;
 
     const { data, error } = await getSupabase()
       .from('items')
-      .update({ title, description, category, price_per_day, condition, location, deposit_required, deposit_amount, updated_at: new Date().toISOString() })
+      .update({ title, description, category, price_per_day, condition, location, deposit_required, deposit_amount, tags, era, instant_book, whatsapp_number, weekly_discount, monthly_discount, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();

@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, signOut } from '@/lib/auth/client';
-import { Item, User } from '@/lib/types';
+import { Item, User, Decorator } from '@/lib/types';
 
 export default function DecoratorDashboard() {
   const router = useRouter();
-  const [user, setUser]     = useState<User | null>(null);
-  const [items, setItems]   = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]           = useState<User | null>(null);
+  const [decorator, setDecorator] = useState<Decorator | null>(null);
+  const [items, setItems]         = useState<Item[]>([]);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => { checkAuth(); }, []);
 
@@ -18,9 +19,14 @@ export default function DecoratorDashboard() {
     const u = await getCurrentUser();
     if (!u || u.role !== 'decorator') { router.push('/auth/login'); return; }
     setUser(u);
-    const res = await fetch(`/api/items?decoratorId=${u.id}`);
-    const data = await res.json();
-    setItems(Array.isArray(data) ? data : []);
+    const [itemsRes, decoratorRes] = await Promise.all([
+      fetch(`/api/items?decoratorId=${u.id}`),
+      fetch(`/api/decorators?id=${u.id}`),
+    ]);
+    const itemsData = await itemsRes.json();
+    const decoratorData = await decoratorRes.json();
+    setItems(Array.isArray(itemsData) ? itemsData : []);
+    if (decoratorData && !decoratorData.error) setDecorator(decoratorData as Decorator);
     setLoading(false);
   }
 
@@ -46,7 +52,14 @@ export default function DecoratorDashboard() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
           <div>
-            <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 40, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>My Props</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 8 }}>
+              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 40, fontWeight: 700, color: 'var(--text)', margin: 0 }}>My Props</h1>
+              {decorator && (decorator.average_rating ?? 0) >= 4.8 && (decorator.total_listings ?? 0) >= 5 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--gold)', color: '#1a1207', fontFamily: 'Barlow Condensed', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: 2 }}>
+                  ⭐ Top Decorator
+                </span>
+              )}
+            </div>
             <p style={{ fontFamily: 'Barlow', fontSize: 14, color: 'var(--text-sub)' }}>{items.length} listing{items.length !== 1 ? 's' : ''} in your catalogue</p>
           </div>
           <Link href="/items/new" className="btn-gold" style={{ padding: '12px 28px', borderRadius: 2, fontSize: 13, textDecoration: 'none', display: 'inline-block' }}>
@@ -57,7 +70,7 @@ export default function DecoratorDashboard() {
         <div className="divider-gold" style={{ marginBottom: 40 }} />
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
           {[
             ['Active Listings', items.length, ''],
             ['Status', user?.status === 'verified' ? 'Verified' : 'Pending', user?.status === 'verified' ? '✓' : '⏳'],
@@ -72,6 +85,16 @@ export default function DecoratorDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Instant Book tip */}
+        {items.length > 0 && items.every(item => !item.instant_book) && (
+          <p style={{ fontFamily: 'Barlow', fontSize: 12, color: 'var(--text-muted)', marginBottom: 40, paddingLeft: 4 }}>
+            💡 Enable Instant Book to get 40% more bookings — edit any listing to turn it on.
+          </p>
+        )}
+        {!(items.length > 0 && items.every(item => !item.instant_book)) && (
+          <div style={{ marginBottom: 40 }} />
+        )}
 
         {/* Items */}
         {items.length === 0 ? (

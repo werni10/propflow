@@ -1,16 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Item } from '@/lib/types';
 
 const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
 const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
+const ERAS       = ['1920s', '1940s', '1960s', '1970s', '1980s', 'Modern', 'Contemporary'];
 
 export default function Home() {
   const [items, setItems]     = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ category: '', location: '', minPrice: '', maxPrice: '' });
+  const [filters, setFilters] = useState({
+    category: '', location: '', minPrice: '', maxPrice: '',
+    search: '', era: '', instantBook: false,
+  });
+
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { fetchItems(); }, [filters]);
 
@@ -22,12 +28,24 @@ export default function Home() {
       if (filters.location) p.append('location', filters.location);
       if (filters.minPrice) p.append('minPrice', filters.minPrice);
       if (filters.maxPrice) p.append('maxPrice', filters.maxPrice);
+      if (filters.search)   p.append('search', filters.search);
+      if (filters.era)      p.append('era', filters.era);
+      if (filters.instantBook) p.append('instantBook', 'true');
       const res = await fetch(`/api/items?${p}`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
     } catch { setItems([]); }
     finally { setLoading(false); }
   }
+
+  function handleSearchChange(value: string) {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setFilters(f => ({ ...f, search: value }));
+    }, 400);
+  }
+
+  const hasActiveFilters = filters.category || filters.location || filters.minPrice || filters.maxPrice || filters.search || filters.era || filters.instantBook;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -89,20 +107,60 @@ export default function Home() {
       <section style={{ background: 'var(--bg-void)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '16px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-muted)', marginRight: 4 }}>Filter</span>
-          {[
-            <select key="cat" value={filters.category} onChange={e => setFilters(f => ({...f, category: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
-              <option value="">All Categories</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>,
-            <select key="loc" value={filters.location} onChange={e => setFilters(f => ({...f, location: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
-              <option value="">All Cities</option>
-              {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>,
-            <input key="min" type="number" placeholder="Min DHS" value={filters.minPrice} onChange={e => setFilters(f => ({...f, minPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />,
-            <input key="max" type="number" placeholder="Max DHS" value={filters.maxPrice} onChange={e => setFilters(f => ({...f, maxPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />,
-          ]}
-          {(filters.category || filters.location || filters.minPrice || filters.maxPrice) && (
-            <button onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '' })} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>✕ Clear</button>
+
+          {/* Search — first in bar, debounced */}
+          <input
+            key="search"
+            type="text"
+            placeholder="Search props..."
+            defaultValue={filters.search}
+            onChange={e => handleSearchChange(e.target.value)}
+            className="input-dark"
+            style={{ width: 180, padding: '8px 12px', borderRadius: 2, fontSize: 13 }}
+          />
+
+          <select key="cat" value={filters.category} onChange={e => setFilters(f => ({...f, category: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
+            <option value="">All Categories</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <select key="loc" value={filters.location} onChange={e => setFilters(f => ({...f, location: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
+            <option value="">All Cities</option>
+            {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+
+          {/* Era filter */}
+          <select key="era" value={filters.era} onChange={e => setFilters(f => ({...f, era: e.target.value}))} className="input-dark" style={{ padding: '8px 12px', borderRadius: 2, fontSize: 13, cursor: 'pointer' }}>
+            <option value="">Era</option>
+            {ERAS.map(era => <option key={era} value={era}>{era}</option>)}
+          </select>
+
+          <input key="min" type="number" placeholder="Min DHS" value={filters.minPrice} onChange={e => setFilters(f => ({...f, minPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />
+          <input key="max" type="number" placeholder="Max DHS" value={filters.maxPrice} onChange={e => setFilters(f => ({...f, maxPrice: e.target.value}))} className="input-dark" style={{ width: 110, padding: '8px 12px', borderRadius: 2, fontSize: 13 }} />
+
+          {/* Instant Book toggle */}
+          <button
+            key="instantBook"
+            onClick={() => setFilters(f => ({...f, instantBook: !f.instantBook}))}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 2,
+              fontSize: 12,
+              fontFamily: 'Barlow Condensed, sans-serif',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              background: filters.instantBook ? 'transparent' : 'var(--bg-elevated)',
+              border: filters.instantBook ? '1px solid var(--gold)' : '1px solid var(--border)',
+              color: filters.instantBook ? 'var(--gold)' : 'var(--text-muted)',
+              transition: 'border-color 0.2s, color 0.2s',
+            }}
+          >
+            ⚡ Instant Book
+          </button>
+
+          {hasActiveFilters && (
+            <button onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false })} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>✕ Clear</button>
           )}
         </div>
       </section>
@@ -133,6 +191,11 @@ export default function Home() {
                     <div style={{ position: 'absolute', top: 10, left: 10 }}>
                       <span className="tag" style={{ background: 'rgba(8,7,8,0.85)' }}>{item.category}</span>
                     </div>
+                    {item.instant_book && (
+                      <div style={{ position: 'absolute', top: 10, right: 10 }}>
+                        <span style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--gold)', background: 'rgba(8,7,8,0.85)', border: '1px solid var(--gold)', padding: '2px 7px', borderRadius: 2 }}>⚡ Instant</span>
+                      </div>
+                    )}
                   </div>
                   <div style={{ padding: '16px 18px 18px' }}>
                     <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 500, color: 'var(--text)', marginBottom: 8, lineHeight: 1.3 }}>{item.title}</h3>
@@ -144,6 +207,13 @@ export default function Home() {
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.condition === 'Excellent' ? '#4CAF50' : item.condition === 'Good' ? 'var(--gold)' : '#FF9800' }} />
                       <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.condition}</span>
                     </div>
+                    {item.tags && item.tags.length > 0 && (
+                      <div style={{ marginTop: 8, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                        {item.tags.slice(0, 2).map((tag: string) => (
+                          <span key={tag} className="tag" style={{ fontSize: 10, padding: '2px 8px' }}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Link>

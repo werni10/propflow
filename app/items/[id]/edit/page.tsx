@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth/client';
@@ -10,20 +10,27 @@ import { User } from '@/lib/types';
 const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
 const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
 const CONDITIONS = ['Excellent', 'Good', 'Fair'] as const;
+const ERAS       = ['', '1920s', '1940s', '1960s', '1970s', '1980s', 'Modern', 'Contemporary'];
+const TAG_SUGGESTIONS = ['moroccan-traditional', 'art-deco', 'industrial', 'vintage', 'minimalist', 'bohemian', 'colonial', 'modern', 'rustic', 'luxury'];
 
 export default function EditItem() {
   const router = useRouter();
   const params = useParams();
   const itemId = params.id as string;
 
-  const [user, setUser] = useState<User | null>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const [user, setUser]     = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
+  const [tagInput, setTagInput] = useState('');
   const [form, setForm] = useState({
     title: '', description: '', category: 'Furniture',
     price_per_day: '', condition: 'Good', location: 'Casablanca',
     deposit_required: false, deposit_amount: '',
+    era: '', instant_book: false, whatsapp_number: '',
+    weekly_discount: '', monthly_discount: '',
+    tags: [] as string[],
   });
 
   useEffect(() => {
@@ -48,6 +55,12 @@ export default function EditItem() {
             location: item.location || 'Casablanca',
             deposit_required: item.deposit_required || false,
             deposit_amount: String(item.deposit_amount || ''),
+            era: item.era || '',
+            instant_book: item.instant_book || false,
+            whatsapp_number: item.whatsapp_number || '',
+            weekly_discount: String(item.weekly_discount || ''),
+            monthly_discount: String(item.monthly_discount || ''),
+            tags: Array.isArray(item.tags) ? item.tags : [],
           });
         }
         setFetching(false);
@@ -56,6 +69,28 @@ export default function EditItem() {
   }, [itemId]);
 
   function set(k: string, v: string | boolean) { setForm(f => ({ ...f, [k]: v })); }
+
+  function addTag(tag: string) {
+    const trimmed = tag.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!trimmed) return;
+    setForm(f => {
+      if (f.tags.includes(trimmed)) return f;
+      return { ...f, tags: [...f.tags, trimmed] };
+    });
+    setTagInput('');
+    tagInputRef.current?.focus();
+  }
+
+  function removeTag(tag: string) {
+    setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }));
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag(tagInput);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +107,9 @@ export default function EditItem() {
           ...form,
           price_per_day: parseFloat(form.price_per_day),
           deposit_amount: form.deposit_required ? parseFloat(form.deposit_amount) : null,
+          weekly_discount: form.weekly_discount ? parseInt(form.weekly_discount, 10) : 0,
+          monthly_discount: form.monthly_discount ? parseInt(form.monthly_discount, 10) : 0,
+          era: form.era || null,
         }),
       });
       const data = await res.json();
@@ -175,6 +213,61 @@ export default function EditItem() {
             </div>
           </div>
 
+          {/* Era */}
+          <div>
+            <label style={labelStyle}>Era</label>
+            <select value={form.era} onChange={e => set('era', e.target.value)} className="input-dark" style={{ ...inputStyle, cursor: 'pointer' }}>
+              {ERAS.map(era => <option key={era} value={era}>{era === '' ? 'Select era...' : era}</option>)}
+            </select>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label style={labelStyle}>Style Tags</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+              <input
+                ref={tagInputRef}
+                type="text"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                className="input-dark"
+                style={{ ...inputStyle, width: 'auto', flex: 1 }}
+                placeholder="Type a tag and press Enter"
+                list="tag-suggestions"
+              />
+              <datalist id="tag-suggestions">
+                {TAG_SUGGESTIONS.map(t => <option key={t} value={t} />)}
+              </datalist>
+              <button
+                type="button"
+                onClick={() => addTag(tagInput)}
+                style={{ padding: '12px 16px', fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-sub)', borderRadius: 2, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >Add</button>
+            </div>
+            {form.tags.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {form.tags.map(tag => (
+                  <span key={tag} className="tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {tag}
+                    <button type="button" onClick={() => removeTag(tag)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0, fontSize: 10, lineHeight: 1 }}>✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ marginTop: 8, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {TAG_SUGGESTIONS.filter(t => !form.tags.includes(t)).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => addTag(t)}
+                  style={{ fontFamily: 'Barlow Condensed', fontSize: 10, letterSpacing: '0.08em', padding: '2px 8px', background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 2, cursor: 'pointer' }}
+                >+ {t}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Deposit */}
           <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 2, padding: '20px 24px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginBottom: form.deposit_required ? 20 : 0 }}>
               <input type="checkbox" checked={form.deposit_required} onChange={e => set('deposit_required', e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--gold)', cursor: 'pointer' }} />
@@ -189,6 +282,38 @@ export default function EditItem() {
                 <input type="number" min="0" step="0.01" value={form.deposit_amount} onChange={e => set('deposit_amount', e.target.value)} className="input-dark" style={inputStyle} placeholder="0.00" />
               </div>
             )}
+          </div>
+
+          {/* Instant Book */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 2, padding: '20px 24px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.instant_book} onChange={e => set('instant_book', e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--gold)', cursor: 'pointer' }} />
+              <div>
+                <div style={{ fontFamily: 'Barlow Condensed', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)', fontWeight: 600 }}>Allow Instant Book</div>
+                <div style={{ fontFamily: 'Barlow', fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Filmmaker books without your approval.</div>
+              </div>
+            </label>
+          </div>
+
+          {/* WhatsApp */}
+          <div>
+            <label style={labelStyle}>WhatsApp Number</label>
+            <input type="text" value={form.whatsapp_number} onChange={e => set('whatsapp_number', e.target.value)} className="input-dark" style={inputStyle} placeholder="+212 6 XX XX XX XX" />
+          </div>
+
+          {/* Discounts */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 2, padding: '20px 24px' }}>
+            <div style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>Duration Discounts</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div>
+                <label style={labelStyle}>Weekly discount (7+ days): %</label>
+                <input type="number" min="0" max="50" value={form.weekly_discount} onChange={e => set('weekly_discount', e.target.value)} className="input-dark" style={inputStyle} placeholder="0" />
+              </div>
+              <div>
+                <label style={labelStyle}>Monthly discount (30+ days): %</label>
+                <input type="number" min="0" max="50" value={form.monthly_discount} onChange={e => set('monthly_discount', e.target.value)} className="input-dark" style={inputStyle} placeholder="0" />
+              </div>
+            </div>
           </div>
 
           {error && (

@@ -31,6 +31,12 @@ export type Item = {
   location: string;
   photos: string[];
   availability_dates: Record<string, boolean>;
+  tags?: string[];
+  era?: string;
+  instant_book?: boolean;
+  whatsapp_number?: string;
+  weekly_discount?: number;
+  monthly_discount?: number;
   created_at: string;
   updated_at: string;
 };
