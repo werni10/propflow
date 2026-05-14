@@ -83,7 +83,7 @@ export default function Home() {
         justifyContent: 'space-between',
         padding: '0 40px',
         borderBottom: scrolled ? '1px solid var(--rule)' : '1px solid transparent',
-        background: scrolled ? 'rgba(13,12,16,0.97)' : 'transparent',
+        background: scrolled ? 'rgba(253,252,249,0.97)' : 'transparent',
         backdropFilter: scrolled ? 'blur(12px)' : 'none',
         transition: 'all 0.4s cubic-bezier(0.25, 0, 0, 1)',
       }}>
@@ -704,7 +704,7 @@ export default function Home() {
                           letterSpacing: '0.1em',
                           textTransform: 'uppercase',
                           color: 'var(--gold)',
-                          background: 'rgba(7,6,10,0.88)',
+                          background: 'rgba(247,245,240,0.92)',
                           padding: '4px 8px',
                         }}>
                           ⚡ instant

@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 :root {
-  --void:      #07060A;
-  --ink:       #0D0C10;
-  --surface:   #141218;
-  --lift:      #1C1920;
-  --rule:      #2A2730;
-  --rule-warm: #3A3228;
-  --gold:      #C8A420;
-  --gold-hi:   #E2B930;
+  --void:      #F7F5F0;
+  --ink:       #FDFCF9;
+  --surface:   #F1EEE7;
+  --lift:      #E8E4DB;
+  --rule:      #DDD9D0;
+  --rule-warm: #C8C3B8;
+  --gold:      #A8861A;
+  --gold-hi:   #C8A420;
   --gold-lo:   #7A6218;
-  --cream:     #F2EBD8;
-  --warm:      #8C7F68;
-  --cool:      #504A40;
-  --red:       #7A2828;
+  --cream:     #18160F;
+  --warm:      #5A5248;
+  --cool:      #8A8278;
+  --red:       #8B2020;
 
   --font-display: 'Cormorant Garamond', 'Playfair Display', serif;
   --font-serif:   'Playfair Display', serif;
@@ -45,7 +45,8 @@ body::before {
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.03;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-size: 128px 128px;
   animation: grain 0.5s steps(1) infinite;
@@ -113,8 +114,8 @@ body::before {
 
 /* ─── BUTTONS ─────────────────────────────────────────── */
 .btn-primary {
-  background: var(--gold);
-  color: var(--void);
+  background: var(--cream);
+  color: var(--ink);
   font-family: var(--font-ui);
   font-weight: 700;
   font-size: 11px;
@@ -128,7 +129,8 @@ body::before {
   transition: all 0.25s cubic-bezier(0.25, 0, 0, 1);
 }
 .btn-primary:hover {
-  background: var(--gold-hi);
+  background: var(--gold);
+  color: var(--ink);
 }
 .btn-primary:disabled {
   opacity: 0.4;

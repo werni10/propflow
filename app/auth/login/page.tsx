@@ -37,12 +37,12 @@ function LoginForm() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ink)', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ink)', display: 'grid', gridTemplateColumns: '1fr 1fr', color: 'var(--cream)' }}>
 
       {/* ── LEFT PANEL — editorial ────────────────────── */}
       <div style={{
-        background: 'var(--void)',
-        borderRight: '1px solid var(--rule)',
+        background: '#0D0C10',
+        borderRight: '1px solid #2A2730',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -58,7 +58,7 @@ function LoginForm() {
           width: 24,
           display: 'flex',
           flexDirection: 'column',
-          color: 'var(--rule)',
+          color: '#3A3228',
           opacity: 0.8,
         }} className="film-strip">
           {Array.from({ length: 40 }).map((_, i) => (
@@ -75,7 +75,7 @@ function LoginForm() {
             fontSize: 20,
             fontWeight: 300,
             fontStyle: 'italic',
-            color: 'var(--warm)',
+            color: '#8C7F68',
             letterSpacing: '0.01em',
           }}>
             PropFlow
@@ -89,23 +89,23 @@ function LoginForm() {
             fontSize: 'clamp(52px, 6vw, 88px)',
             fontWeight: 300,
             fontStyle: 'italic',
-            color: 'var(--cream)',
+            color: '#F2EBD8',
             lineHeight: 0.95,
             letterSpacing: '-0.02em',
             marginBottom: 48,
           }}>
             Cinema<br/>
-            <span style={{ color: 'var(--gold)' }}>lives in</span><br/>
+            <span style={{ color: '#C8A420' }}>lives in</span><br/>
             the props.
           </div>
 
-          <div style={{ height: 1, background: 'var(--rule)', marginBottom: 32, maxWidth: 80 }} />
+          <div style={{ height: 1, background: '#2A2730', marginBottom: 32, maxWidth: 80 }} />
 
           <p style={{
             fontFamily: 'Barlow, sans-serif',
             fontWeight: 300,
             fontSize: 13,
-            color: 'var(--cool)',
+            color: '#504A40',
             lineHeight: 1.8,
             maxWidth: 280,
           }}>
@@ -119,7 +119,7 @@ function LoginForm() {
           fontSize: 10,
           fontWeight: 300,
           letterSpacing: '0.15em',
-          color: 'var(--cool)',
+          color: '#504A40',
           textTransform: 'uppercase',
           paddingLeft: 8,
         }}>

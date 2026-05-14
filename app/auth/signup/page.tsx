@@ -33,8 +33,8 @@ export default function SignUp() {
 
       {/* ── LEFT PANEL — editorial ────────────────────── */}
       <div style={{
-        background: 'var(--void)',
-        borderRight: '1px solid var(--rule)',
+        background: '#0D0C10',
+        borderRight: '1px solid #2A2730',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -50,7 +50,7 @@ export default function SignUp() {
           width: 24,
           display: 'flex',
           flexDirection: 'column',
-          color: 'var(--rule)',
+          color: '#3A3228',
           opacity: 0.8,
         }} className="film-strip">
           {Array.from({ length: 40 }).map((_, i) => (
@@ -67,7 +67,7 @@ export default function SignUp() {
             fontSize: 20,
             fontWeight: 300,
             fontStyle: 'italic',
-            color: 'var(--warm)',
+            color: '#8C7F68',
             letterSpacing: '0.01em',
           }}>
             PropFlow
@@ -81,22 +81,22 @@ export default function SignUp() {
             fontSize: 'clamp(48px, 5.5vw, 80px)',
             fontWeight: 300,
             fontStyle: 'italic',
-            color: 'var(--cream)',
+            color: '#F2EBD8',
             lineHeight: 0.95,
             letterSpacing: '-0.02em',
             marginBottom: 48,
           }}>
             Join the<br/>
-            <span style={{ color: 'var(--gold)' }}>catalogue.</span>
+            <span style={{ color: '#C8A420' }}>catalogue.</span>
           </div>
 
-          <div style={{ height: 1, background: 'var(--rule)', marginBottom: 32, maxWidth: 80 }} />
+          <div style={{ height: 1, background: '#2A2730', marginBottom: 32, maxWidth: 80 }} />
 
           <p style={{
             fontFamily: 'Barlow, sans-serif',
             fontWeight: 300,
             fontSize: 13,
-            color: 'var(--cool)',
+            color: '#504A40',
             lineHeight: 1.8,
             maxWidth: 280,
           }}>
@@ -110,7 +110,7 @@ export default function SignUp() {
           fontSize: 10,
           fontWeight: 300,
           letterSpacing: '0.15em',
-          color: 'var(--cool)',
+          color: '#504A40',
           textTransform: 'uppercase',
           paddingLeft: 8,
         }}>
