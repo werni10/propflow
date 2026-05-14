@@ -157,28 +157,16 @@ export default function Home() {
 
       {/* ──────────────── HERO ──────────────── */}
       <section style={{
-        minHeight: '100vh',
+        minHeight: '92vh',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'flex-end',
-        padding: '0 48px 64px',
+        justifyContent: 'center',
+        padding: '100px 48px 80px',
         position: 'relative',
         borderBottom: '1px solid var(--line)',
-        overflow: 'hidden',
       }}>
-        {/* Background grid lines — architectural */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          {[20, 45, 70].map(pct => (
-            <div key={pct} style={{
-              position: 'absolute', top: 0, bottom: 0,
-              left: `${pct}%`, width: 1,
-              background: 'var(--line)', opacity: 0.5,
-            }} />
-          ))}
-        </div>
-
         {/* Top-right corner meta */}
-        <div className="fade-in d1" style={{
+        <div className="fade-in" style={{
           position: 'absolute', top: 80, right: 48,
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
         }}>
@@ -186,17 +174,17 @@ export default function Home() {
           <span className="label">Cinema Prop Marketplace</span>
         </div>
 
-        {/* Main headline */}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-          <p className="label fade-up d1" style={{ marginBottom: 32 }}>
+        {/* Content */}
+        <div style={{ maxWidth: 1000 }}>
+          <p className="label fade-up d1" style={{ marginBottom: 40 }}>
             No. 001 — The Prop Catalogue
           </p>
 
           <h1 className="fade-up d2" style={{
             fontFamily: "'Cormorant', Georgia, serif",
             fontWeight: 300,
-            fontSize: 'clamp(72px, 10vw, 148px)',
-            lineHeight: 0.92,
+            fontSize: 'clamp(64px, 9vw, 128px)',
+            lineHeight: 0.93,
             letterSpacing: '-0.03em',
             color: 'var(--ink)',
             marginBottom: 0,
@@ -207,72 +195,54 @@ export default function Home() {
             fontFamily: "'Cormorant', Georgia, serif",
             fontStyle: 'italic',
             fontWeight: 300,
-            fontSize: 'clamp(72px, 10vw, 148px)',
-            lineHeight: 0.92,
+            fontSize: 'clamp(64px, 9vw, 128px)',
+            lineHeight: 0.93,
             letterSpacing: '-0.03em',
             color: 'var(--gold)',
-            marginBottom: 48,
+            marginBottom: 56,
           }}>
             tells a story.
           </h1>
 
-          <div className="fade-up d4" style={{
-            display: 'flex', alignItems: 'center', gap: 40,
-          }}>
+          <div className="fade-up d4" style={{ display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
             <p style={{
               fontFamily: "'Outfit', sans-serif",
-              fontWeight: 300,
-              fontSize: 16,
-              color: 'var(--ink-mid)',
-              lineHeight: 1.7,
-              maxWidth: 380,
+              fontWeight: 300, fontSize: 16,
+              color: 'var(--ink-mid)', lineHeight: 1.75,
+              maxWidth: 360,
             }}>
               Morocco's first marketplace for cinema props. Hundreds of pieces, five cities, one platform.
             </p>
-
             <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
-              <Link href="/auth/signup?role=renter" className="btn-dark" style={{
-                padding: '14px 32px', fontSize: 12, fontWeight: 500,
-                letterSpacing: '0.06em', textDecoration: 'none',
-              }}>
+              <Link href="/auth/signup?role=renter" className="btn-dark" style={{ padding: '14px 32px', fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', textDecoration: 'none' }}>
                 Browse props
               </Link>
-              <Link href="/auth/signup?role=decorator" className="btn-outline" style={{
-                padding: '14px 32px', fontSize: 12, fontWeight: 500,
-                letterSpacing: '0.06em', textDecoration: 'none',
-              }}>
+              <Link href="/auth/signup?role=decorator" className="btn-outline" style={{ padding: '14px 32px', fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', textDecoration: 'none' }}>
                 List your props
               </Link>
             </div>
           </div>
         </div>
-
-        {/* Bottom stats bar */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          borderTop: '1px solid var(--line)',
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-        }}>
-          {[
-            { n: `${!loading ? items.length : '—'}`, l: 'Props listed' },
-            { n: '5', l: 'Moroccan cities' },
-            { n: '50+', l: 'Decorators' },
-            { n: 'Free', l: 'To browse' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              padding: '24px 40px',
-              borderRight: i < 3 ? '1px solid var(--line)' : 'none',
-              display: 'flex', flexDirection: 'column', gap: 6,
-            }}>
-              <span style={{
-                fontFamily: "'Cormorant', serif", fontWeight: 300,
-                fontSize: 40, lineHeight: 1, color: 'var(--ink)',
-              }}>{s.n}</span>
-              <span className="label">{s.l}</span>
-            </div>
-          ))}
-        </div>
       </section>
+
+      {/* ──────────────── STATS BAR ──────────────── */}
+      <div style={{ borderBottom: '1px solid var(--line)', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        {[
+          { n: !loading ? String(items.length) : '—', l: 'Props listed' },
+          { n: '5', l: 'Moroccan cities' },
+          { n: '50+', l: 'Decorators' },
+          { n: 'Free', l: 'To browse' },
+        ].map((s, i) => (
+          <div key={i} style={{
+            padding: '28px 40px',
+            borderRight: i < 3 ? '1px solid var(--line)' : 'none',
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            <span style={{ fontFamily: "'Cormorant', serif", fontWeight: 300, fontSize: 40, lineHeight: 1, color: 'var(--ink)' }}>{s.n}</span>
+            <span className="label">{s.l}</span>
+          </div>
+        ))}
+      </div>
 
       {/* ──────────────── CATALOGUE ──────────────── */}
       <section id="catalogue" style={{ paddingTop: 64 }}>
