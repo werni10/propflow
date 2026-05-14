@@ -1,5 +1,10 @@
 import { getSupabase } from '@/lib/supabase';
 import { validateAuth } from '@/lib/auth/validate';
+import {
+  sendBookingRequestEmail,
+  sendBookingConfirmedEmail,
+  sendBookingCancelledEmail,
+} from '@/lib/email';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -94,6 +99,51 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    // Send email notifications (fire-and-forget, wrapped in try/catch)
+    try {
+      const supabase = getSupabase();
+
+      // Fetch renter + decorator user records
+      const [{ data: renterUser }, { data: decoratorUser }, { data: itemRecord }] = await Promise.all([
+        supabase.from('users').select('email, name').eq('id', renter_id).single(),
+        supabase.from('users').select('email, name').eq('id', decorator_id).single(),
+        supabase.from('items').select('title').eq('id', item_id).single(),
+      ]);
+
+      const propTitle = itemRecord?.title ?? 'Unknown Prop';
+      const renterName = renterUser?.name ?? 'Renter';
+      const decoratorName = decoratorUser?.name ?? 'Decorator';
+
+      // Always notify decorator of the new request
+      if (decoratorUser?.email) {
+        await sendBookingRequestEmail(decoratorUser.email, {
+          decoratorName,
+          renterName,
+          propTitle,
+          startDate: start_date,
+          endDate: end_date,
+          totalPrice: data[0].total_price,
+          bookingId: data[0].id,
+        });
+      }
+
+      // If instant book, also confirm to renter immediately
+      if (itemData?.instant_book && renterUser?.email) {
+        await sendBookingConfirmedEmail(renterUser.email, {
+          renterName,
+          propTitle,
+          startDate: start_date,
+          endDate: end_date,
+          totalPrice: data[0].total_price,
+          bookingId: data[0].id,
+          decoratorName,
+        });
+      }
+    } catch {
+      // Email failure must never break the API response
+    }
+
     return NextResponse.json(data[0], { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -110,6 +160,13 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { id, status } = body;
 
+    // Fetch full booking details before updating (we need renter/decorator IDs)
+    const { data: bookingFull } = await getSupabase()
+      .from('bookings')
+      .select('renter_id, decorator_id, item_id, start_date, end_date, total_price')
+      .eq('id', id)
+      .single();
+
     const { data, error } = await getSupabase()
       .from('bookings')
       .update({ status, updated_at: new Date().toISOString() })
@@ -117,6 +174,54 @@ export async function PUT(request: NextRequest) {
       .select();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+    // Send status-change email notifications (fire-and-forget)
+    if (bookingFull && (status === 'confirmed' || status === 'cancelled')) {
+      try {
+        const supabase = getSupabase();
+        const [{ data: renterUser }, { data: decoratorUser }, { data: itemRecord }] = await Promise.all([
+          supabase.from('users').select('email, name').eq('id', bookingFull.renter_id).single(),
+          supabase.from('users').select('email, name').eq('id', bookingFull.decorator_id).single(),
+          supabase.from('items').select('title').eq('id', bookingFull.item_id).single(),
+        ]);
+
+        const propTitle = itemRecord?.title ?? 'Unknown Prop';
+        const renterName = renterUser?.name ?? 'Renter';
+        const decoratorName = decoratorUser?.name ?? 'Decorator';
+
+        if (status === 'confirmed') {
+          if (renterUser?.email) {
+            await sendBookingConfirmedEmail(renterUser.email, {
+              renterName,
+              propTitle,
+              startDate: bookingFull.start_date,
+              endDate: bookingFull.end_date,
+              totalPrice: bookingFull.total_price,
+              bookingId: id,
+              decoratorName,
+            });
+          }
+        } else if (status === 'cancelled') {
+          const emailData = {
+            propTitle,
+            startDate: bookingFull.start_date,
+            endDate: bookingFull.end_date,
+            bookingId: id,
+          };
+          await Promise.all([
+            renterUser?.email
+              ? sendBookingCancelledEmail(renterUser.email, { recipientName: renterName, ...emailData })
+              : Promise.resolve(),
+            decoratorUser?.email
+              ? sendBookingCancelledEmail(decoratorUser.email, { recipientName: decoratorName, ...emailData })
+              : Promise.resolve(),
+          ]);
+        }
+      } catch {
+        // Email failure must never break the API response
+      }
+    }
+
     return NextResponse.json(data[0]);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

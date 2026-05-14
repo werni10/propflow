@@ -18,6 +18,35 @@ export default function ItemDetail() {
 
   useEffect(() => { fetchItem(); }, [id]);
 
+  // Inject JSON-LD structured data once item loads
+  useEffect(() => {
+    if (!item) return;
+    const scriptId = 'propflow-jsonld';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'application/ld+json';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: item.title,
+      description: item.description,
+      image: item.photos?.[0] ?? undefined,
+      offers: {
+        '@type': 'Offer',
+        price: item.price_per_day,
+        priceCurrency: 'MAD',
+        availability: 'https://schema.org/InStock',
+      },
+    });
+    return () => {
+      document.getElementById(scriptId)?.remove();
+    };
+  }, [item]);
+
   async function fetchItem() {
     try {
       const res = await fetch(`/api/items?id=${id}`);

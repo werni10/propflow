@@ -2,8 +2,23 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PropFlow — Cinema Prop Rental, Morocco",
-  description: "Morocco's premier marketplace for cinema prop rentals. Connect set decorators with filmmakers.",
+  title: { default: 'PropFlow — Cinema Props Morocco', template: '%s | PropFlow' },
+  description:
+    "Morocco's first marketplace for cinema prop rentals. Find furniture, lighting, decor, and vintage props for film productions.",
+  keywords: [
+    'cinema props',
+    'Morocco',
+    'film production',
+    'prop rental',
+    'set decoration',
+    'Casablanca',
+    'Marrakech',
+  ],
+  openGraph: {
+    siteName: 'PropFlow',
+    locale: 'en_US',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

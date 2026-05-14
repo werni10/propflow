@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase';
 import { validateAuth } from '@/lib/auth/validate';
+import { sendReviewReceivedEmail } from '@/lib/email';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -95,6 +96,38 @@ export async function POST(request: NextRequest) {
         .from('decorators')
         .update({ average_rating: Math.round(avg * 10) / 10 })
         .eq('id', reviewed_id);
+    }
+
+    // Send review notification email (fire-and-forget)
+    try {
+      const supabase = getSupabase();
+      const [{ data: reviewer }, { data: reviewedUser }, { data: bookingWithItem }] = await Promise.all([
+        supabase.from('users').select('name').eq('id', userId).single(),
+        supabase.from('users').select('email, name').eq('id', reviewed_id).single(),
+        supabase.from('bookings').select('item_id').eq('id', booking_id).single(),
+      ]);
+
+      let propTitle = 'Unknown Prop';
+      if (bookingWithItem?.item_id) {
+        const { data: itemRecord } = await supabase
+          .from('items')
+          .select('title')
+          .eq('id', bookingWithItem.item_id)
+          .single();
+        if (itemRecord?.title) propTitle = itemRecord.title;
+      }
+
+      if (reviewedUser?.email) {
+        await sendReviewReceivedEmail(reviewedUser.email, {
+          recipientName: reviewedUser.name ?? 'there',
+          reviewerName: reviewer?.name ?? 'Someone',
+          rating,
+          comment: comment ?? '',
+          propTitle,
+        });
+      }
+    } catch {
+      // Email failure must never break the API response
     }
 
     return NextResponse.json(data, { status: 201 });

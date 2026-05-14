@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Item } from '@/lib/types';
+
+const PropsMap = dynamic(() => import('@/components/map/PropsMap'), { ssr: false });
 
 const CATEGORIES = ['Furniture', 'Lighting', 'Decor', 'Props', 'Textiles', 'Other'];
 const LOCATIONS  = ['Casablanca', 'Fes', 'Marrakech', 'Tangier', 'Rabat'];
@@ -11,6 +14,7 @@ const ERAS       = ['1920s', '1940s', '1960s', '1970s', '1980s', 'Modern', 'Cont
 export default function Home() {
   const [items, setItems]     = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapView, setMapView] = useState(false);
   const [filters, setFilters] = useState({
     category: '', location: '', minPrice: '', maxPrice: '',
     search: '', era: '', instantBook: false,
@@ -159,13 +163,34 @@ export default function Home() {
             ⚡ Instant Book
           </button>
 
+          {/* Map View toggle */}
+          <button
+            key="mapView"
+            onClick={() => setMapView(v => !v)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 2,
+              fontSize: 12,
+              fontFamily: 'Barlow Condensed, sans-serif',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              background: mapView ? 'transparent' : 'var(--bg-elevated)',
+              border: mapView ? '1px solid var(--gold)' : '1px solid var(--border)',
+              color: mapView ? 'var(--gold)' : 'var(--text-muted)',
+              transition: 'border-color 0.2s, color 0.2s',
+            }}
+          >
+            ◎ Map View
+          </button>
+
           {hasActiveFilters && (
             <button onClick={() => setFilters({ category: '', location: '', minPrice: '', maxPrice: '', search: '', era: '', instantBook: false })} style={{ fontFamily: 'Barlow Condensed', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>✕ Clear</button>
           )}
         </div>
       </section>
 
-      {/* GRID */}
+      {/* GRID / MAP */}
       <section style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 13 }}>Loading scenes...</div>
@@ -174,6 +199,8 @@ export default function Home() {
             <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, color: 'var(--text-sub)', marginBottom: 12 }}>No props found</div>
             <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Try adjusting your filters</p>
           </div>
+        ) : mapView ? (
+          <PropsMap items={items} />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
             {items.map(item => (
