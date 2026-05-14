@@ -477,7 +477,7 @@ export default function Home() {
             {[
               { n: '01', title: 'Browse', body: 'Search props by category, city, era, or style. Filter by instant availability.' },
               { n: '02', title: 'Book', body: 'Contact the decorator. Confirm dates and pricing. Instant Book on select props.' },
-              { n: '03', title: 'Create', body: 'Collect your props. Return after the shoot. Build your production's reputation.' },
+              { n: '03', title: 'Create', body: "Collect your props. Return after the shoot. Build your production's reputation." },
             ].map((s, i) => (
               <div key={s.n} style={{
                 padding: '64px 40px',
