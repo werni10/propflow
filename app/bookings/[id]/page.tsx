@@ -422,6 +422,13 @@ export default function BookingDetailPage() {
                         {cancelError}
                       </div>
                     )}
+                    <Link
+                      href={`/bookings/${booking.id}/messages`}
+                      className="btn-ghost"
+                      style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 2, fontSize: 12, textDecoration: 'none', textAlign: 'center' as const, boxSizing: 'border-box' as const, marginBottom: 10 }}
+                    >
+                      💬 Messages
+                    </Link>
                     <button
                       onClick={handleCancel}
                       disabled={cancelling}
@@ -454,18 +461,57 @@ export default function BookingDetailPage() {
                       Booking complete. Share your experience with a review.
                     </div>
                     <Link
+                      href={`/bookings/${booking.id}/messages`}
+                      className="btn-ghost"
+                      style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 2, fontSize: 12, textDecoration: 'none', textAlign: 'center' as const, boxSizing: 'border-box' as const, marginBottom: 10 }}
+                    >
+                      💬 Messages
+                    </Link>
+                    <Link
                       href={`/bookings/${booking.id}/review`}
                       className="btn-gold"
-                      style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 2, fontSize: 12, textDecoration: 'none', textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                      style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 2, fontSize: 12, textDecoration: 'none', textAlign: 'center' as const, boxSizing: 'border-box' as const, marginBottom: 10 }}
                     >
                       Leave a Review →
+                    </Link>
+                    <Link
+                      href={`/bookings/${booking.id}/damage`}
+                      style={{
+                        display:       'block',
+                        width:         '100%',
+                        padding:       '13px',
+                        borderRadius:  2,
+                        fontSize:      12,
+                        fontFamily:    'Barlow Condensed',
+                        fontWeight:    700,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase' as const,
+                        textDecoration: 'none',
+                        textAlign:     'center' as const,
+                        boxSizing:     'border-box' as const,
+                        background:    'rgba(155,58,58,0.1)',
+                        color:         '#C95C5C',
+                        border:        '1px solid rgba(155,58,58,0.35)',
+                        transition:    'all 0.2s',
+                      }}
+                    >
+                      ⚠ Report Damage
                     </Link>
                   </div>
                 )}
 
                 {(booking.status === 'active') && (
-                  <div style={{ fontFamily: 'Barlow', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                    Your booking is currently active. Enjoy your props!
+                  <div>
+                    <div style={{ fontFamily: 'Barlow', fontSize: 12, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                      Your booking is currently active. Enjoy your props!
+                    </div>
+                    <Link
+                      href={`/bookings/${booking.id}/messages`}
+                      className="btn-ghost"
+                      style={{ display: 'block', width: '100%', padding: '13px', borderRadius: 2, fontSize: 12, textDecoration: 'none', textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                    >
+                      💬 Messages
+                    </Link>
                   </div>
                 )}
 
