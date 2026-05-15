@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       sb.from('bookings').select('id, status, total_price, item_id, created_at'),
       sb.from('users').select('id, role'),
       sb.from('items').select('id'),
-      sb.from('decorators').select('id, user_id, average_rating, total_listings').select('*, users:user_id(name)'),
+      sb.from('decorators').select('id, average_rating, total_listings, users:id(name)'),
     ]);
 
     if (bErr) return NextResponse.json({ error: bErr.message }, { status: 400 });
