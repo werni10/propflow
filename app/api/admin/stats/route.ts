@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       sb.from('bookings').select('id, status, total_price, item_id, created_at'),
       sb.from('users').select('id, role'),
       sb.from('items').select('id'),
-      sb.from('decorators').select('id, average_rating, total_listings, users:id(name)'),
+      sb.from('decorators').select('id, average_rating, total_listings'),
     ]);
 
     if (bErr) return NextResponse.json({ error: bErr.message }, { status: 400 });
@@ -111,15 +111,24 @@ export async function GET(request: NextRequest) {
     }
 
     // ── top decorators (by rating) ──────────────────────────────────────────
-    const topDecorators = allDecorators
+    const topDecRaw = allDecorators
       .sort((a, b) => (b.average_rating ?? 0) - (a.average_rating ?? 0))
-      .slice(0, 5)
-      .map(d => ({
-        id: d.id,
-        name: (d.users as { name?: string } | null)?.name ?? 'Unknown',
-        total_listings: d.total_listings ?? 0,
-        average_rating: d.average_rating ?? 0,
-      }));
+      .slice(0, 5);
+
+    const topDecIds = topDecRaw.map(d => d.id);
+    const { data: decUsers } = topDecIds.length > 0
+      ? await sb.from('users').select('id, name').in('id', topDecIds)
+      : { data: [] };
+
+    const nameMap: Record<string, string> = {};
+    for (const u of decUsers ?? []) nameMap[u.id] = u.name ?? 'Unknown';
+
+    const topDecorators = topDecRaw.map(d => ({
+      id: d.id,
+      name: nameMap[d.id] ?? 'Unknown',
+      total_listings: d.total_listings ?? 0,
+      average_rating: d.average_rating ?? 0,
+    }));
 
     return NextResponse.json({
       totalBookings,
