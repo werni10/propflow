@@ -222,30 +222,91 @@ export default function Home() {
           {ERAS.map(e=><option key={e} value={e}>{e}</option>)}
         </select>
 
-        <button onClick={() => setFilters(f=>({...f,instantBook:!f.instantBook}))} style={{
-          fontFamily: "'Outfit',sans-serif", fontSize: 12, fontWeight: 400, letterSpacing: '0.02em',
-          padding: '6px 14px', cursor: 'pointer', transition: 'all 0.15s ease',
-          background: filters.instantBook ? '#C9971C' : 'transparent',
-          color: filters.instantBook ? '#FFF' : '#5C5750',
-          border: `1px solid ${filters.instantBook ? '#C9971C' : '#E8E4DC'}`,
-        }}>
-          ⚡ Instant
+        {/* ── INSTANT BOOK — live indicator badge ── */}
+        <button
+          onClick={() => setFilters(f=>({...f,instantBook:!f.instantBook}))}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '6px 14px 6px 10px',
+            cursor: 'pointer', border: 'none', outline: 'none',
+            background: filters.instantBook ? '#C9971C' : '#FAFAF8',
+            transition: 'all 0.2s ease',
+            boxShadow: filters.instantBook ? '0 2px 12px rgba(201,151,28,0.35)' : 'none',
+          }}
+        >
+          {/* Pulsing live dot */}
+          <span style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
+            <span style={{
+              display: 'block', width: 8, height: 8, borderRadius: '50%',
+              background: filters.instantBook ? '#FFF' : '#C9971C',
+            }} />
+            {filters.instantBook && (
+              <span style={{
+                position: 'absolute', inset: -3,
+                borderRadius: '50%',
+                border: '1.5px solid rgba(255,255,255,0.5)',
+                animation: 'ping 1.2s cubic-bezier(0,0,0.2,1) infinite',
+              }} />
+            )}
+          </span>
+          <span style={{
+            fontFamily: "'DM Mono',monospace", fontSize: 9,
+            fontWeight: 300, letterSpacing: '0.14em', textTransform: 'uppercase',
+            color: filters.instantBook ? '#FFF' : '#9C9589',
+          }}>
+            Instant Book
+          </span>
+          <style>{`@keyframes ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2.2);opacity:0}}`}</style>
         </button>
 
-        <button onClick={() => setMapView(v=>!v)} style={{
-          fontFamily: "'Outfit',sans-serif", fontSize: 12, padding: '6px 14px', cursor: 'pointer',
-          background: mapView ? '#0A0908' : 'transparent',
-          color: mapView ? '#FFF' : '#5C5750',
-          border: `1px solid ${mapView ? '#0A0908' : '#E8E4DC'}`,
-          transition: 'all 0.15s ease',
-        }}>
-          ◎ Map
+        {/* ── MAP VIEW — dot-grid icon ── */}
+        <button
+          onClick={() => setMapView(v=>!v)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 9,
+            padding: '6px 14px 6px 10px',
+            cursor: 'pointer', border: 'none', outline: 'none',
+            background: mapView ? '#0A0908' : '#FAFAF8',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {/* 2×2 dot grid */}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            {[0,6].map(cx => [0,6].map(cy => (
+              <circle key={`${cx}-${cy}`} cx={cx+2.5} cy={cy+2.5} r={2}
+                fill={mapView ? (cx===0&&cy===0 ? '#C9971C' : '#FFF') : (cx===0&&cy===0 ? '#0A0908' : '#C8C3BB')} />
+            )))}
+          </svg>
+          <span style={{
+            fontFamily: "'DM Mono',monospace", fontSize: 9,
+            fontWeight: 300, letterSpacing: '0.14em', textTransform: 'uppercase',
+            color: mapView ? '#FFF' : '#9C9589',
+          }}>
+            Map
+          </span>
         </button>
 
+        {/* ── CLEAR — strikethrough ── */}
         {hasFilters && (
-          <button onClick={() => setFilters({ category:'',location:'',minPrice:'',maxPrice:'',search:'',era:'',instantBook:false })}
-            style={{ fontFamily:"'Outfit',sans-serif", fontSize: 12, color:'#9C9589', background:'none', border:'none', cursor:'pointer', padding:'6px 4px' }}>
-            × Clear
+          <button
+            onClick={() => setFilters({ category:'',location:'',minPrice:'',maxPrice:'',search:'',era:'',instantBook:false })}
+            style={{
+              position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer', padding: '6px 8px',
+              fontFamily: "'DM Mono',monospace", fontSize: 9,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: '#C8C3BB',
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#0A0908')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#C8C3BB')}
+          >
+            {/* Animated X */}
+            <svg width="10" height="10" viewBox="0 0 10 10" style={{ flexShrink: 0 }}>
+              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            Reset
           </button>
         )}
 
